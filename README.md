@@ -3,8 +3,7 @@
 This repository is aimed to be a template for creating Modal workers for running ComfyUI workflows. It will be extended with new features and improvements over time. Currently it supports:
 
 - WebSocket communication with the server (Optional, will return via REST API when completed if not enabled)
-- Basic job queuing system
-- Volumes for storing models (see the `volume_updaters` folder for examples)
+- Volume updaters for using custom models (see the `volume_updaters` folder for examples)
 - Installing custom nodes from private repos
 - Progress reporting back to the server and calculating the percentage of completion
 - Using a snapshot to install custom nodes and specifying the ComfyUI version
