@@ -14,7 +14,7 @@ The worker is designed to be modular and easy to extend. It currently uses a sin
 
 - [Development](#development)
 - [Deployment](#deployment)
-- [Updating Volumes](#updating-volumes)
+- [Using Volumes](#using-volumes)
 - [Installing Custom Nodes](#installing-custom-nodes)
 - [WebSocket Communication](#websocket-communication)
 
@@ -31,16 +31,11 @@ If you're using modal with a multi environment set up, make sure you set the cor
 Then deploy the worker:
 `modal deploy workflow`
 
-## Updating Volumes
+## Using Volumes
 
-Volumes in Modal are used to load models into the ComfyUI instance inside workers. Workers may share or have their own volumes.
+Volumes in Modal are used to load models into the ComfyUI instance inside workers. Workers may share volumes with other workers or have their own volumes.
 
-### Example: Updating a Volume from Hugging Face
-
-There is an example of how to update a volume using a Hugging Face repository in the `volume_updaters/huggingface.example.py` file.
-This script downloads the contents of a specified Hugging Face repository to a Modal volume. You can use this as a template to create your own volume updater. Generally it's a good idea to create a huggingface/s3 directory by following [comfy's models directory structure](https://github.com/comfyanonymous/ComfyUI/tree/master/models).
-
-After you update the volume, it will be mounted at `/volume` inside the worker instance and comfy will be launched with `extra_model_paths.yaml` file that points to it.
+I have included example volume updaters in the `volume_updaters` folder. These are used to download models from huggingface and copy them to a volume so that ComfyUI can use them. You may also want to download the models directly into the image but this is not recommended because it will increase the size of the image and slow down the startup time of the worker.
 
 ## Installing Custom Nodes
 
