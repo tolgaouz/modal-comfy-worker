@@ -60,7 +60,7 @@ class ComfyWorkflow:
         launch_comfy()
 
     @web_endpoint(method="POST")
-    def run(self, data: Input):
+    def infer(self, data: Input):
         try:
             completion_data = process_job(data)
             if "error_message" in completion_data:
