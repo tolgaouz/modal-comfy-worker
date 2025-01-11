@@ -2,10 +2,11 @@ import json
 from datetime import datetime, date
 import decimal
 import uuid
+from typing import Any
 
 
 class JSONEncoder(json.JSONEncoder):
-    def default(self, obj):
+    def default(self, obj: Any) -> Any:
         # Handle datetime objects
         if isinstance(obj, (datetime, date)):
             return obj.isoformat()

@@ -53,7 +53,6 @@ async def run_prompt(data: Input, websockets=True, on_ws_message=None):
 
     # Prepare response data structure
     to_send_back = {
-        "email": data.email,
         "client_id": data.client_id,
         "process_id": data.process_id,
         "worker_id": os.environ.get("MODAL_TASK_ID", "Unknown"),

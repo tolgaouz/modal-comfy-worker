@@ -1,22 +1,34 @@
-import time
-from typing import Literal
+from typing import Literal, Dict, Any, Protocol, TypedDict
 import websocket
 from ..comfy.job_progress import ComfyStatusLog
 from .json_encoder import JSONEncoder
 import json
 from .logger import logger
+from .utils import get_time_ms
 
 
-def create_timestamped_data(prompt_id, data):
+class JobData(Protocol):
+    process_id: str
+    client_id: str
+
+
+class TimestampedData(TypedDict):
+    timestamp: int
+    prompt_id: str
+    process_id: str
+    client_id: str
+
+
+def create_timestamped_data(prompt_id: str, data: JobData) -> TimestampedData:
     return {
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "timestamp": get_time_ms(),
         "prompt_id": prompt_id,
         "process_id": data.process_id,
         "client_id": data.client_id,
     }
 
 
-def create_status_log(message_data, prompt_id):
+def create_status_log(message_data: Dict[str, Any], prompt_id: str) -> ComfyStatusLog:
     return ComfyStatusLog(
         prompt_id=prompt_id,
         node=message_data.get("node", None),
@@ -30,8 +42,8 @@ def create_status_log(message_data, prompt_id):
 def send_ws_message(
     server_ws_connection: websocket.WebSocket,
     type: Literal["worker:job_failed", "worker:job_completed", "worker:job_progress"],
-    to_send_back: dict,
-):
+    to_send_back: Dict[str, Any],
+) -> bool:
     try:
         if server_ws_connection:
             server_ws_connection.send(
@@ -43,6 +55,7 @@ def send_ws_message(
                     cls=JSONEncoder,
                 )
             )
+        return True
     except Exception as e:
         client_id = to_send_back.get("client_id", None)
         process_id = to_send_back.get("process_id", None)

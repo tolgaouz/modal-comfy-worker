@@ -118,24 +118,24 @@ If you need to use private GitHub repositories in your snapshot, you'll need to:
 
 2. Set the `GITHUB_TOKEN` environment variable:
    
-   ```bash
-   # In your shell
-   export GITHUB_TOKEN=your_token_here
-   
-   # Or in Modal
-   modal secret create github-token GITHUB_TOKEN=your_token_here
-   ```
+  ```bash
+  # In your shell
+  export GITHUB_TOKEN=your_token_here
+  
+  # Or in Modal
+  modal secret create github-token GITHUB_TOKEN=your_token_here
+  ```
 
-   Then in your Modal app:
-   ```python
-   from modal import Secret
-   
-   github_secret = Secret.from_name("github-token")
-   
-   @stub.function(secrets=[github_secret])
-   def my_function():
-       # Your code here
-   ```
+  Then in your Modal app:
+  ```python
+  from modal import Secret
+  
+  github_secret = Secret.from_name("github-token")
+  
+  @stub.function(secrets=[github_secret])
+  def my_function():
+      # Your code here
+  ```
 
 If you try to access a private repository without setting up the token, you'll get an error message with instructions.
 
@@ -144,3 +144,7 @@ For more details on creating GitHub tokens, see the [official documentation](htt
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is open-sourced under the MIT License - see the [LICENSE](LICENSE) file for details.

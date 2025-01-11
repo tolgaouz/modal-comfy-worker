@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional, Callable, List
+from typing import Optional, Callable, List, Dict
 import os
 from ..lib.utils import check_disk_speed
 from ..lib.json_encoder import JSONEncoder
@@ -7,6 +7,9 @@ import json
 import websocket
 import logging
 import time
+import torch
+from ..lib.utils import get_time_ms
+from ..lib.messaging import create_timestamped_data, create_status_log, send_ws_message
 
 logger = logging.getLogger(__name__)
 
@@ -285,14 +288,14 @@ async def experimental_run_prompt(data: Input, websockets=True):
 
     try:
         if websockets:
-            log_redis(
+            logger.info(
                 "Starting server ws connection. Connection URL: " + data.connection_url
             )
             server_connect_start_time = get_time_ms()
             server_ws_connection = websocket.WebSocket()
             server_ws_connection.connect(data.connection_url)
             server_connection_time = get_time_ms() - server_connect_start_time
-            log_redis(
+            logger.info(
                 f"Connected to Server. Time to connect: {server_connection_time} ms"
             )
             to_send_back["server_connection_time"] = int(server_connection_time)
@@ -310,10 +313,9 @@ async def experimental_run_prompt(data: Input, websockets=True):
                 },
             )
     except Exception as e:
-        log_redis(f"Failed to establish websocket connection to server: {e}", "error")
-        log_redis(
+        logger.error(f"Failed to establish websocket connection to server: {e}")
+        logger.error(
             "Continuing job execution... Will return via REST API when completed.",
-            "error",
         )
         server_ws_connection = None
 
@@ -322,7 +324,7 @@ async def experimental_run_prompt(data: Input, websockets=True):
 
         callbacks = ExecutionCallbacks(
             on_error=lambda error_data: (
-                log_redis(error_data, "error"),
+                logger.error(error_data),
                 send_ws_message(
                     server_ws_connection,
                     "worker:job_failed",
@@ -342,7 +344,7 @@ async def experimental_run_prompt(data: Input, websockets=True):
                 )
                 if server_ws_connection
                 else None,
-                log_redis(
+                logger.info(
                     f"Job Completed for: Job ID {data.process_id}. Sending Completion Event."
                 ),
             ),
@@ -359,7 +361,7 @@ async def experimental_run_prompt(data: Input, websockets=True):
                 )
                 if server_ws_connection
                 else None,
-                log_redis(f"Job Progress: {comfy_job.getPercentage()}"),
+                logger.info(f"Job Progress: {comfy_job.getPercentage()}"),
             )
             if event in message_types_to_process
             else None,
@@ -377,7 +379,7 @@ async def experimental_run_prompt(data: Input, websockets=True):
         return to_send_back
 
     except Exception as e:
-        log_redis(f"Error in execution: {str(e)}", "error")
+        logger.error(f"Error in execution: {str(e)}")
         raise Exception(
             f"Unexpected exception while executing prompt. Please contact us on discord about the issue. Job ID: {data.process_id}"
         )
