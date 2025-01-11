@@ -44,10 +44,7 @@ class ComfyServer:
             """Helper function to stream output from process to stdout"""
             for line in iter(stream.readline, ""):
                 if line.strip():  # Only print non-empty lines
-                    if prefix == "COMFY-ERR":
-                        logger.error(f"{prefix}: {line.strip()}")
-                    else:
-                        logger.info(f"{prefix}: {line.strip()}")
+                    logger.info(f"{prefix}: {line.strip()}")
             stream.close()
 
         stdout_thread = threading.Thread(
