@@ -20,3 +20,15 @@ class Input(BaseModel):
     client_id: str
     process_id: str
     connection_url: Optional[str] = None
+
+
+class PerformanceMetrics(BaseModel):
+    execution_time: int
+    execution_delay_time: int
+    server_connection_time: Optional[int] = None
+
+
+class BaseWorkerResponse(BaseModel):
+    client_id: str
+    process_id: str
+    performance_metrics: PerformanceMetrics
