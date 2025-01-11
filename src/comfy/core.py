@@ -3,11 +3,20 @@ import logging
 from .job_progress import ComfyJob
 import websocket
 import time
-import os
-from ..utils import deep_merge, get_time_ms
+from ..lib.utils import deep_merge, get_time_ms
 import asyncio
-from .messaging import create_timestamped_data, create_status_log, send_ws_message
-from .models import Input, ExecutionData, ExecutionCallbacks
+from ..lib.messaging import (
+    create_timestamped_data,
+    create_status_log,
+    send_ws_message,
+)
+from .models import (
+    Input,
+    ExecutionData,
+    ExecutionCallbacks,
+    PerformanceMetrics,
+    BaseWorkerResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,20 +61,15 @@ async def run_prompt(data: Input, websockets=True, on_ws_message=None):
     logger.info(f"Job ID: {data.process_id}. User ID: {data.client_id}")
 
     # Prepare response data structure
-    to_send_back = {
-        "client_id": data.client_id,
-        "process_id": data.process_id,
-        "worker_id": os.environ.get("MODAL_TASK_ID", "Unknown"),
-        "provider_metadata": {
-            "region": os.environ.get("MODAL_REGION", "Unknown"),
-            "cloud_provider": os.environ.get("MODAL_CLOUD_PROVIDER", "Unknown"),
-            "container_id": os.environ.get("MODAL_TASK_ID", "Unknown"),
-        },
-        "execution_time": 0,
-        "execution_delay_time": 0,
-    }
+    to_send_back = BaseWorkerResponse(
+        client_id=data.client_id,
+        process_id=data.process_id,
+    )
 
-    start = time.time() * 1000
+    performance_metrics = PerformanceMetrics(
+        execution_time=0,
+        execution_delay_time=0,
+    )
 
     try:
         # Setup websocket connection if enabled
@@ -80,7 +84,9 @@ async def run_prompt(data: Input, websockets=True, on_ws_message=None):
             logger.info(
                 f"Connected to Server. Time to connect: {server_connection_time} ms"
             )
-            to_send_back["server_connection_time"] = int(server_connection_time)
+            to_send_back.performance_metrics.server_connection_time = int(
+                server_connection_time
+            )
     except Exception as e:
         logger.error(f"Failed to establish websocket connection to server: {e}")
         logger.error(
@@ -104,8 +110,10 @@ async def run_prompt(data: Input, websockets=True, on_ws_message=None):
             ),
             on_ws_message=on_ws_message,
             on_done=lambda msg: (
-                to_send_back.update(
-                    {"execution_time": int(time.time() * 1000 - start)}
+                setattr(
+                    performance_metrics,
+                    "execution_time",
+                    int(get_time_ms() - job_start_time),
                 ),
                 send_ws_message(
                     server_ws_connection, "worker:job_completed", to_send_back
@@ -130,10 +138,14 @@ async def run_prompt(data: Input, websockets=True, on_ws_message=None):
                 logger.info(f"Job Progress: {msg.get('percentage', 0)}%"),
             ),
             on_start=lambda msg: (
-                to_send_back.update(
-                    {"execution_delay_time": int(time.time() * 1000 - job_start_time)}
+                setattr(
+                    performance_metrics,
+                    "execution_delay_time",
+                    int(time.time() * 1000 - job_start_time),
                 ),
-                logger.info(f"Execution start took: {time.time()*1000 - start} ms"),
+                logger.info(
+                    f"Execution start took: {time.time()*1000 - job_start_time} ms"
+                ),
             ),
         )
 
@@ -145,23 +157,10 @@ async def run_prompt(data: Input, websockets=True, on_ws_message=None):
 
     except Exception as e:
         logger.error(f"Error in execution: {str(e)}")
-        raise Exception(
-            f"Unexpected exception while executing prompt. Please contact us on discord about the issue. Job ID: {data.process_id}"
-        )
+        raise e
     finally:
         if server_ws_connection:
             server_ws_connection.close()
-
-
-def stream_subprocess_output(stream, prefix):
-    """Helper function to stream subprocess output to Modal logs"""
-    for line in iter(stream.readline, ""):
-        if line.strip():  # Only print non-empty lines
-            if prefix == "ERROR":
-                logger.error(f"{prefix}: {line.strip()}")
-            else:
-                logger.info(f"{prefix}: {line.strip()}")
-    stream.close()
 
 
 def queue_prompt(data):
@@ -281,7 +280,6 @@ async def execute(
                             callbacks.on_done({"process_id": data.process_id})
                         result_future.set_result(
                             {
-                                "process_id": data.process_id,
                                 "prompt_id": prompt_id,
                                 "queue_duration": comfy_queue_duration,
                             }
@@ -304,81 +302,3 @@ async def execute(
     finally:
         if ws:
             ws.close()
-
-
-def launch_comfy(port=8188, gpu_only=True, wait_for_ready=True):
-    import subprocess
-    import socket
-    import threading
-    import sys
-
-    def stream_output(stream, prefix):
-        """Helper function to stream output from process to stdout"""
-        for line in stream:
-            if line:
-                sys.stdout.write(f"{prefix}: {line}")
-                sys.stdout.flush()
-
-    print("launching comfy")
-    cmd = [
-        "python",
-        "/root/ComfyUI/main.py",
-        "--dont-print-server",
-        "--disable-auto-launch",
-        "--disable-metadata",
-        "--listen",
-    ]
-    if gpu_only:
-        cmd.append("--gpu-only")
-    if port:
-        cmd.append("--port")
-        cmd.append(str(port))
-
-    process = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        bufsize=1,
-        universal_newlines=True,
-    )
-
-    # Start threads to handle stdout and stderr streams
-    stdout_thread = threading.Thread(
-        target=stream_output, args=(process.stdout, "COMFY-OUT"), daemon=True
-    )
-    stderr_thread = threading.Thread(
-        target=stream_output, args=(process.stderr, "COMFY-ERR"), daemon=True
-    )
-
-    stdout_thread.start()
-    stderr_thread.start()
-
-    # Poll until webserver accepts connections before running inputs.
-    if wait_for_ready:
-        while True:
-            try:
-                socket.create_connection(("localhost", port), timeout=1).close()
-                print("ComfyUI webserver ready!")
-                # Create threads to handle output streams
-                stdout_thread = threading.Thread(
-                    target=stream_subprocess_output, args=(process.stdout, "OUTPUT")
-                )
-                stderr_thread = threading.Thread(
-                    target=stream_subprocess_output, args=(process.stderr, "ERROR")
-                )
-
-                # Start threads
-                stdout_thread.daemon = True
-                stderr_thread.daemon = True
-                stdout_thread.start()
-                stderr_thread.start()
-                break
-            except (socket.timeout, ConnectionRefusedError):
-                retcode = process.poll()
-                if retcode is not None:
-                    raise RuntimeError(
-                        f"comfyui main.py exited unexpectedly with code {retcode}"
-                    )
-
-    return True
