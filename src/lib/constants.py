@@ -13,6 +13,3 @@ WS_MESSAGE_TYPES: Final[list[WS_MESSAGE_TYPE]] = [
     "worker:job_progress",
     "worker:job_started",
 ]
-
-# Time format
-TIMESTAMP_FORMAT: Final[str] = "%Y-%m-%dT%H:%M:%SZ"
