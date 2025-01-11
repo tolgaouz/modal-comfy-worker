@@ -2,10 +2,15 @@ import json
 import os
 import shutil
 import subprocess
-import time
 from zipfile import ZipFile
+from typing import Dict
+import logging
 
 import requests
+from .server import ComfyServer
+from .config import ComfyConfig
+
+logger = logging.getLogger(__name__)
 
 
 def move_all_contents(source_dir, destination_dir):
@@ -24,20 +29,46 @@ def move_all_contents(source_dir, destination_dir):
         print(f"Moved: {source_item} to {destination_item}")
 
 
-def clone_repository(repo_url, commit_hash, target_path):
+def clone_repository(
+    repo_url: str,
+    commit_hash: str,
+    target_path: str,
+) -> None:
+    """
+    Clone a specific commit from a GitHub repository and extract it to a target path.
+
+    Args:
+        repo_url: The GitHub repository URL
+        commit_hash: The specific commit hash to clone
+        target_path: Local path to extract the repository to
+
+    Raises:
+        requests.RequestException: If the repository cannot be downloaded
+        zipfile.BadZipFile: If the downloaded archive is corrupted
+        ValueError: If trying to access a private repo without GITHUB_TOKEN
+    """
     print("cloning repo", repo_url, commit_hash, target_path)
     if not os.path.exists(target_path):
         os.makedirs(target_path)
 
     api_url = f"{repo_url}/archive/{commit_hash}.zip"
+    token = os.environ.get("GITHUB_TOKEN")
 
-    headers = {
-        "Authorization": f"token {os.environ.get('GITHUB_TOKEN')}",
-        "Accept": "application/vnd.github.v3+json",
-    }
+    headers = {"Accept": "application/vnd.github.v3+json"}
+    if token:
+        headers["Authorization"] = f"token {token}"
 
-    response = requests.get(api_url, headers=headers)
-    response.raise_for_status()
+    try:
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        if e.response and e.response.status_code == 404:
+            raise ValueError(
+                "You are trying to clone a private GitHub repository. Make sure you have a valid "
+                "GITHUB_TOKEN in your environment variables. For instructions on creating a token, "
+                "visit: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens"
+            )
+        raise
 
     repo_name = repo_url.rstrip("/").split("/")[-1]
     zip_file_path = os.path.join(target_path, f"{repo_name}.zip")
@@ -63,27 +94,19 @@ def clone_repository(repo_url, commit_hash, target_path):
     )
 
 
-def clone_custom_nodes(custom_nodes, comfyui_path):
+def clone_custom_nodes(custom_nodes: Dict[str, Dict], comfyui_path: str) -> None:
+    """Install custom ComfyUI nodes from their repositories."""
     for repo_url, repo_data in custom_nodes.items():
-        if not repo_data["disabled"]:
-            with_token = repo_url.replace(
-                "https://", f"https://{os.environ.get('GITHUB_TOKEN')}@"
-            )
+        try:
+            if repo_data.get("disabled", False):
+                logger.info(f"Skipping disabled node: {repo_url}")
+                continue
 
-            if "recursive" in repo_data and repo_data["recursive"]:
-                subprocess.run(
-                    [
-                        "git",
-                        "clone",
-                        "--recursive",
-                        repo_url,
-                        os.path.join(
-                            comfyui_path,
-                            "custom_nodes",
-                            repo_url.rstrip("/").split("/")[-1],
-                        ),
-                    ]
-                )
+            logger.info(f"Installing custom node from: {repo_url}")
+            with_token = _add_github_token_to_url(repo_url)
+
+            if repo_data.get("recursive", False):
+                _clone_recursive_repo(with_token, comfyui_path)
             else:
                 clone_repository(
                     with_token,
@@ -91,53 +114,14 @@ def clone_custom_nodes(custom_nodes, comfyui_path):
                     os.path.join(comfyui_path, "custom_nodes", repo_url.split("/")[-1]),
                 )
 
-
-def start_server():
-    print("Installing comfy dependencies.")
-
-    # Start an instance of comfy to make sure all deps are installed.
-    command = [
-        "python",
-        "main.py",
-        "--disable-auto-launch",
-        "--disable-metadata",
-        "--cpu",
-    ]
-    server_process = subprocess.Popen(command, cwd="/root/ComfyUI")
-    return server_process
+        except Exception as e:
+            logger.error(f"Failed to install custom node {repo_url}: {str(e)}")
+            if repo_data.get("required", False):
+                raise
 
 
-def check_server(server_process):
-    url = "http://127.0.0.1:8188"
-    retries = 600
-    delay = 2000
-    for _ in range(retries):
-        if server_process.poll() is not None:
-            print("Subprocess has ended")
-            break
-
-        try:
-            response = requests.head(url)
-            if response.status_code == 200:
-                print("API is reachable")
-            return True
-
-        except requests.RequestException:
-            pass
-
-        time.sleep(delay / 1000)
-
-    print(f"Failed to connect to server at {url} after {retries} attempts.")
-    return False
-
-
-def download_comfy(snapshot_path: str, enable_private_repos: bool = False):
+def download_comfy(snapshot_path: str):
     path = os.path.join("/root", snapshot_path)
-    # Check if private repos are enabled and github token is set
-    if enable_private_repos and not os.environ.get("GITHUB_TOKEN", None):
-        raise ValueError(
-            "GITHUB_TOKEN is not set, but private repos are enabled. Please create a github secret in modal and pass it to this function in the image build phase."
-        )
 
     with open(path, "r") as file:
         json_data = file.read()
@@ -149,10 +133,36 @@ def download_comfy(snapshot_path: str, enable_private_repos: bool = False):
     comfy_commit_hash = data["comfyui"]
 
     clone_repository(comfyui_repo_url, comfy_commit_hash, comfyui_path)
-
     clone_custom_nodes(data["git_custom_nodes"], comfyui_path)
-    # download_musepose_models()
-    server = start_server()
-    check_server(server)
-    server.terminate()
-    print("Finished installing dependencies.")
+
+    # Use ComfyServer instead of direct server management
+    config = ComfyConfig()
+    server = ComfyServer(config)
+
+    logger.info("Starting ComfyUI server to install dependencies")
+    server.start(cpu_only=True)
+
+    try:
+        server.wait_until_ready()
+    finally:
+        if server.process:
+            server.process.terminate()
+            logger.info("ComfyUI server terminated")
+
+    logger.info("Finished installing dependencies")
+
+
+def _add_github_token_to_url(repo_url: str) -> str:
+    """Add GitHub token to repository URL if available."""
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        return repo_url.replace("https://", f"https://{token}@")
+    return repo_url
+
+
+def _clone_recursive_repo(repo_url: str, comfyui_path: str) -> None:
+    """Clone a repository recursively."""
+    target_path = os.path.join(
+        comfyui_path, "custom_nodes", repo_url.rstrip("/").split("/")[-1]
+    )
+    subprocess.run(["git", "clone", "--recursive", repo_url, target_path], check=True)

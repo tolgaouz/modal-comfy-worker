@@ -5,8 +5,6 @@ The volume is then used as the /models directory in your ComfyUI container.
 """
 
 from modal import Secret, Image, App, Volume
-import os
-from huggingface_hub import snapshot_download
 from ..workflow import APP_NAME, VOLUME_NAME
 
 image = (
@@ -22,7 +20,7 @@ models_to_download = [
     # format is (huggingface repo_id, the model filename, comfyui models subdirectory we want to save the model in)
     (
         "black-forest-labs/FLUX.1-schnell",
-        "ae.safetensors",
+        "vae.safetensors",
         "vae",
     ),
     (

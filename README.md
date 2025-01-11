@@ -106,6 +106,41 @@ The `process_job` function in `comfy/comfy_utils.py` handles the main workflow a
   }
   ```
 
+## Using Private GitHub Repositories
+
+If you need to use private GitHub repositories in your snapshot, you'll need to:
+
+1. Create a GitHub Personal Access Token (Classic):
+   - Go to GitHub Settings -> Developer Settings -> Personal Access Tokens -> Tokens (classic)
+   - Click "Generate new token (classic)"
+   - Give it a name and select the `repo` scope
+   - Copy the generated token
+
+2. Set the `GITHUB_TOKEN` environment variable:
+   
+   ```bash
+   # In your shell
+   export GITHUB_TOKEN=your_token_here
+   
+   # Or in Modal
+   modal secret create github-token GITHUB_TOKEN=your_token_here
+   ```
+
+   Then in your Modal app:
+   ```python
+   from modal import Secret
+   
+   github_secret = Secret.from_name("github-token")
+   
+   @stub.function(secrets=[github_secret])
+   def my_function():
+       # Your code here
+   ```
+
+If you try to access a private repository without setting up the token, you'll get an error message with instructions.
+
+For more details on creating GitHub tokens, see the [official documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

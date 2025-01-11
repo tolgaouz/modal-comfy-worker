@@ -1,8 +1,8 @@
 from fastapi import HTTPException
 from modal import Secret, enter, App, web_endpoint, gpu, Volume
-from .comfy.comfy_utils import launch_comfy, process_job
+from .comfy.core import launch_comfy, process_job
 from .comfy.download_comfy import download_comfy
-from .base_image import base_image
+from .lib.base_image import base_image
 from pydantic import BaseModel
 from .utils.logger import logger
 from typing import Optional
@@ -11,20 +11,10 @@ snapshot_path = "./snapshot.json"
 
 github_secret = Secret.from_name("github-secret")
 
-image = (
-    base_image.copy_local_file(
-        snapshot_path,
-        "/root/snapshot.json",
-    )
-    # Enable private repos
-    .run_function(download_comfy, args=[snapshot_path, True], secrets=[github_secret])
-    # Use public repos only
-    # .run_function(download_comfy, args=[snapshot_path, False])
-    .copy_local_file(
-        "./src/keyframe/extra_model_paths.yaml",
-        "/root/ComfyUI/extra_model_paths.yaml",
-    )
-)
+image = base_image.copy_local_file(
+    snapshot_path,
+    "/root/snapshot.json",
+).run_function(download_comfy, args=[snapshot_path], secrets=[github_secret])
 
 APP_NAME = "comfy-worker"
 VOLUME_NAME = f"{APP_NAME}-volume"
@@ -34,9 +24,9 @@ volume = Volume.from_name(VOLUME_NAME)
 
 
 class Input(BaseModel):
-    prompt: dict
-    client_id: str
-    job_id: str
+    prompt: dict  # Prompt is workflow.json with the values changed
+    client_id: str  # client_id is a unique identifier for a user.
+    job_id: str  # A job id is a unique identifier for a job that is used to track the job's progress and results.
     ws_connection_url: Optional[str] = ""
 
 
