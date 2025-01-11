@@ -4,13 +4,10 @@ import shutil
 import subprocess
 from zipfile import ZipFile
 from typing import Dict
-import logging
-
+from ..lib.logger import logger
 import requests
 from .server import ComfyServer
 from .config import ComfyConfig
-
-logger = logging.getLogger(__name__)
 
 
 def move_all_contents(source_dir, destination_dir):

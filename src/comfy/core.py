@@ -3,6 +3,7 @@ import logging
 from .job_progress import ComfyJob
 import websocket
 import time
+from typing import TypedDict
 from ..lib.utils import deep_merge, get_time_ms
 import asyncio
 from ..lib.messaging import (
@@ -17,8 +18,8 @@ from .models import (
     PerformanceMetrics,
     BaseWorkerResponse,
 )
-
-logger = logging.getLogger(__name__)
+from ..lib.exceptions import WebSocketError, ExecutionError
+from ..lib.logger import logger
 
 # Used to indicate if comfy is already running for standard execute/run_prompt APIs.
 comfy_running = False
@@ -88,11 +89,7 @@ async def run_prompt(data: Input, websockets=True, on_ws_message=None):
                 server_connection_time
             )
     except Exception as e:
-        logger.error(f"Failed to establish websocket connection to server: {e}")
-        logger.error(
-            "Continuing job execution... Will return via REST API when completed.",
-        )
-        server_ws_connection = None
+        raise WebSocketError("Failed to establish websocket connection to server: {e}")
 
     try:
         # Define callbacks for execution monitoring
@@ -163,11 +160,15 @@ async def run_prompt(data: Input, websockets=True, on_ws_message=None):
             server_ws_connection.close()
 
 
-def queue_prompt(data):
+class QueuePromptData(TypedDict):
+    prompt: dict
+    client_id: str
+
+
+def queue_prompt(data: QueuePromptData):
     import urllib
 
-    payload = {"prompt": data["prompt"], "client_id": data["client_id"]}
-    serialized = json.dumps(payload).encode("utf-8")
+    serialized = json.dumps(data).encode("utf-8")
     req = urllib.request.Request("http://localhost:8188/prompt", data=serialized)
 
     try:
@@ -204,10 +205,6 @@ async def execute(
         Exception: If there's an error during prompt queuing or execution
         asyncio.TimeoutError: If execution exceeds timeout
     """
-    global comfy_running
-    if not comfy_running:
-        launch_comfy(8188, gpu_only=False, wait_for_ready=True)
-        comfy_running = True
     execution_started = False
     ws = None
 
@@ -292,12 +289,12 @@ async def execute(
             return await asyncio.wait_for(result_future, timeout=timeout)
         except asyncio.TimeoutError:
             monitor_task.cancel()
-            raise
+            raise ExecutionError("Execution timed out")
 
     except Exception as e:
         if callbacks.on_error:
             callbacks.on_error({"error_message": str(e)})
-        raise
+        raise e
 
     finally:
         if ws:

@@ -1,15 +1,23 @@
-class WebSocketError(Exception):
-    """Base exception for WebSocket related errors"""
+class ComfyUIError(Exception):
+    """Base exception for all ComfyUI related errors"""
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class ServerStartupError(ComfyUIError):
+    """Raised when the ComfyUI server fails to start"""
 
     pass
 
 
-class MessageSendError(WebSocketError):
-    """Raised when a WebSocket message fails to send"""
+class ExecutionError(ComfyUIError):
+    """Raised when a ComfyUI execution fails"""
 
-    def __init__(self, process_id: str, original_error: Exception):
-        self.process_id = process_id
-        self.original_error = original_error
-        super().__init__(
-            f"Failed to send websocket message for {process_id}: {str(original_error)}"
-        )
+    pass
+
+
+class WebSocketError(ComfyUIError):
+    """Raised when there's an error with WebSocket communication"""
+
+    pass

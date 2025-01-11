@@ -1,11 +1,10 @@
-from typing import Dict, Any, Protocol, TypedDict
+from typing import Dict, Any, Protocol, TypedDict, Literal
 import websocket
 from ..comfy.job_progress import ComfyStatusLog
 from .json_encoder import JSONEncoder
 import json
-from .logger import logger
+from ..lib.exceptions import WebSocketError
 from .utils import get_time_ms
-from .constants import WS_MESSAGE_TYPE
 
 
 class JobData(Protocol):
@@ -42,7 +41,12 @@ def create_status_log(message_data: Dict[str, Any], prompt_id: str) -> ComfyStat
 
 def send_ws_message(
     server_ws_connection: websocket.WebSocket,
-    type: WS_MESSAGE_TYPE,
+    type: Literal[
+        "worker:job_failed",
+        "worker:job_completed",
+        "worker:job_progress",
+        "worker:job_started",
+    ],
     to_send_back: Any,
 ) -> bool:
     try:
@@ -57,10 +61,7 @@ def send_ws_message(
                 )
             )
         return True
-    except Exception as e:
-        client_id = to_send_back.get("client_id", None)
-        process_id = to_send_back.get("process_id", None)
-        if client_id and process_id:
-            logger.error(f"Failed to send websocket message for {process_id}")
-            logger.error(str(e))
-        return False
+    except Exception:
+        raise WebSocketError(
+            "Failed to send websocket message. Websocket server may not be running"
+        )

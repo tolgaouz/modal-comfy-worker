@@ -1,5 +1,6 @@
 from typing import Optional, Callable, Dict
 from pydantic import BaseModel
+from ..lib.exceptions import ComfyUIError
 
 
 class ExecutionData(BaseModel):
@@ -32,3 +33,17 @@ class BaseWorkerResponse(BaseModel):
     client_id: str
     process_id: str
     performance_metrics: PerformanceMetrics
+    error: Optional[str] = None
+
+    @classmethod
+    def from_error(
+        cls, error: ComfyUIError, client_id: str, process_id: str
+    ) -> "BaseWorkerResponse":
+        return cls(
+            client_id=client_id,
+            process_id=process_id,
+            performance_metrics=PerformanceMetrics(
+                execution_time=0, execution_delay_time=0
+            ),
+            error=str(error),
+        )

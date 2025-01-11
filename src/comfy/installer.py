@@ -1,11 +1,9 @@
 import os
 import json
-import logging
 from typing import Dict, Any
 from .config import ComfyConfig
 from .download_comfy import clone_repository, clone_custom_nodes
-
-logger = logging.getLogger(__name__)
+from ..lib.logger import logger
 
 
 class InstallationError(Exception):
