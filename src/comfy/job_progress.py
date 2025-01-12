@@ -1,4 +1,4 @@
-from typing import Dict, Set, Optional, List
+from typing import Dict, Set, Optional, List, Any
 
 
 class ComfyStatusLog:
@@ -17,6 +17,15 @@ class ComfyStatusLog:
         self.max = max
         self.status = status
         self.nodes = nodes
+
+    def from_comfy_message(self, message_data: Dict[str, Any], prompt_id: str):
+        self.prompt_id = prompt_id
+        self.node = message_data.get("node", None)
+        self.status = message_data.get("status", None)
+        self.max = message_data.get("max", 1)
+        self.value = message_data.get("value", 1)
+        self.nodes = message_data.get("nodes", [])
+        return self
 
 
 class ComfyJobProgress:

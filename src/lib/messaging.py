@@ -28,17 +28,6 @@ def create_timestamped_data(prompt_id: str, data: JobData) -> TimestampedData:
     }
 
 
-def create_status_log(message_data: Dict[str, Any], prompt_id: str) -> ComfyStatusLog:
-    return ComfyStatusLog(
-        prompt_id=prompt_id,
-        node=message_data.get("node", None),
-        status=message_data.get("status", None),
-        max=message_data.get("max", 1),
-        value=message_data.get("value", 1),
-        nodes=message_data.get("nodes", []),
-    )
-
-
 def send_ws_message(
     server_ws_connection: websocket.WebSocket,
     type: Literal[
