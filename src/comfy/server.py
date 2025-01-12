@@ -7,7 +7,7 @@ import threading
 from lib.utils import get_time_ms
 from .config import ComfyConfig
 from ..lib.exceptions import ServerStartupError
-from .models import QueuePromptData
+from .models import ExecutionResult, QueuePromptData
 import json
 import asyncio
 import websocket
@@ -151,7 +151,7 @@ class ComfyServer:
     async def execute(
         self,
         data: ExecutionData,
-        callbacks: ExecutionCallbacks,
+        callbacks: ExecutionCallbacks = ExecutionCallbacks(),
         timeout: int = 60,
     ):
         """
@@ -212,7 +212,8 @@ class ComfyServer:
                     ):
                         continue
 
-                    callbacks.on_ws_message(message_type, message_data)
+                    if callbacks.on_ws_message:
+                        callbacks.on_ws_message(message_type, message_data)
 
                     # Handle execution errors
                     if message_type == "execution_error":
@@ -220,7 +221,8 @@ class ComfyServer:
                             callbacks.on_error(message.get("data", {}))
                         raise Exception(
                             message.get("data", {}).get(
-                                "exception_message", "Unknown Exception"
+                                "exception_message",
+                                "Unknown Exception while executing the workflow",
                             )
                         )
 
@@ -248,10 +250,10 @@ class ComfyServer:
                             if callbacks.on_done:
                                 callbacks.on_done({"process_id": data.process_id})
                             result_future.set_result(
-                                {
-                                    "prompt_id": prompt_id,
-                                    "queue_duration": comfy_queue_duration,
-                                }
+                                ExecutionResult(
+                                    prompt_id=prompt_id,
+                                    queue_duration=comfy_queue_duration,
+                                )
                             )
                             break
 

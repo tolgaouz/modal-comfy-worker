@@ -16,6 +16,11 @@ class ExecutionCallbacks(BaseModel):
     on_ws_message: Optional[Callable[[str, Dict], None]] = None
 
 
+class ExecutionResult(BaseModel):
+    prompt_id: str
+    queue_duration: int
+
+
 class Input(BaseModel):
     prompt: dict
     client_id: str

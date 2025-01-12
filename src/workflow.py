@@ -52,5 +52,7 @@ class ComfyWorkflow:
         self.server.wait_until_ready()
 
     @web_endpoint(method="POST")
-    def infer(self, data: Input):
-        pass
+    async def infer(self, data: Input):
+        # Execute the prompt
+        execution_result = await self.server.execute(data=data)
+        return execution_result
