@@ -47,3 +47,8 @@ class BaseWorkerResponse(BaseModel):
             ),
             error=str(error),
         )
+
+
+class QueuePromptData(BaseModel):
+    prompt: dict
+    client_id: str
