@@ -1,10 +1,10 @@
 from fastapi import HTTPException
-from modal import Secret, enter, App, web_endpoint, gpu, Volume
-from .comfy.core import launch_comfy, process_job
+from modal import Secret, enter, App, web_endpoint, Volume
 from .comfy.download_comfy import download_comfy
+from .comfy.server import ComfyServer
 from .lib.base_image import base_image
 from pydantic import BaseModel
-from .utils.logger import logger
+from .lib.logger import logger
 from typing import Optional
 
 snapshot_path = "./snapshot.json"
@@ -47,19 +47,10 @@ class Input(BaseModel):
 class ComfyWorkflow:
     @enter()
     def run_this_on_container_startup(self):
-        launch_comfy()
+        self.server = ComfyServer()
+        self.server.start()
+        self.server.wait_until_ready()
 
     @web_endpoint(method="POST")
     def infer(self, data: Input):
-        try:
-            completion_data = process_job(data)
-            if "error_message" in completion_data:
-                raise HTTPException(status_code=500, detail=completion_data)
-            return completion_data
-        except Exception as e:
-            logger.error(str(e))
-            return {
-                "client_id": data.client_id,
-                "job_id": data.job_id,
-                "error_message": str(e),
-            }
+        pass
