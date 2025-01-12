@@ -1,13 +1,11 @@
-from fastapi import HTTPException
 from modal import Secret, enter, App, web_endpoint, Volume
 from .comfy.download_comfy import download_comfy
 from .comfy.server import ComfyServer
 from .lib.base_image import base_image
-from pydantic import BaseModel
-from .lib.logger import logger
-from typing import Optional
+from .comfy.models import ExecutionData
 
-snapshot_path = "./snapshot.json"
+# This is the path to the snapshot.json file that will be used to launch the ComfyUI server.
+snapshot_path = "./snapshot.example.json"
 
 github_secret = Secret.from_name("github-secret")
 
@@ -21,13 +19,6 @@ VOLUME_NAME = f"{APP_NAME}-volume"
 
 app = App(APP_NAME)
 volume = Volume.from_name(VOLUME_NAME)
-
-
-class Input(BaseModel):
-    prompt: dict  # Prompt is workflow.json with the values changed
-    client_id: str  # client_id is a unique identifier for a user.
-    job_id: str  # A job id is a unique identifier for a job that is used to track the job's progress and results.
-    ws_connection_url: Optional[str] = ""
 
 
 @app.cls(
@@ -52,7 +43,28 @@ class ComfyWorkflow:
         self.server.wait_until_ready()
 
     @web_endpoint(method="POST")
-    async def infer(self, data: Input):
+    async def infer(self, data: ExecutionData):
         # Execute the prompt
         execution_result = await self.server.execute(data=data)
         return execution_result
+
+
+"""
+The following is the modal function that launches the ComfyUI server as an interactive web server.
+You can use this to debug your workflows or send them to people.
+@app.function(
+    allow_concurrent_inputs=10,
+    concurrency_limit=1,
+    secrets=[aws_secret, upstash_secret],
+    image=image,
+    volumes={"/volume": volume},
+    container_idle_timeout=30,
+    timeout=1800,
+    gpu="H100",
+    cpu=1,
+    memory=10240,
+)
+@web_server(8000, startup_timeout=60)
+def ui():
+    launch_comfy(8000, gpu_only=False, wait_for_ready=False)
+"""

@@ -21,13 +21,6 @@ class ExecutionResult(BaseModel):
     queue_duration: int
 
 
-class Input(BaseModel):
-    prompt: dict
-    client_id: str
-    process_id: str
-    connection_url: Optional[str] = None
-
-
 class PerformanceMetrics(BaseModel):
     execution_time: int
     execution_delay_time: int

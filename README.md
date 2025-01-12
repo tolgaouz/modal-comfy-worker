@@ -2,11 +2,12 @@
 
 This repository is aimed to be a template for creating Modal workers for running ComfyUI workflows. It will be extended with new features and improvements over time. Currently it supports:
 
-- WebSocket communication with the server (Optional, will return via REST API when completed if not enabled)
+- WebSocket communication with the server (Optional, will return via REST API when completed if not enabled) (see the `examples/progress_tracking_with_websockets` folder for an example)
 - Volume updaters for using custom models (see the `volume_updaters` folder for examples)
 - Installing custom nodes from private repos
-- Progress reporting back to the server and calculating the percentage of completion
+- Progress reporting and calculating the percentage of completion
 - Using a snapshot to install custom nodes and specifying the ComfyUI version
+- Serving the ComfyUI server as an interactive web server
 
 The worker is designed to be modular and easy to extend. It currently uses a single Modal app for all the functionality.
 
@@ -16,12 +17,11 @@ The worker is designed to be modular and easy to extend. It currently uses a sin
 - [Deployment](#deployment)
 - [Using Volumes](#using-volumes)
 - [Installing Custom Nodes](#installing-custom-nodes)
-- [WebSocket Communication](#websocket-communication)
 
 ## Development
 
 To run the worker locally:
-`modal serve workflow`
+`modal serve src.workflow`
 This command will spin up a live development server synced with the remote Modal instance.
 
 ## Deployment
@@ -43,69 +43,6 @@ This worker supports installing custom nodes from private repos. You can specify
 
 Even if you don't use any custom nodes, you should include the `snapshot.json` file in the root of the repo because it installs the ComfyUI version using the commit hash.
 
-To be able to install private repos, you need to set the `GITHUB_TOKEN` environment variable in the Modal app. You can do this by creating a new secret in the Modal environment either through the dashboard or by running `modal secret create github_token`. Private repos are enabled by default. You can disable them by changing the line in `workflow.py`:
-
-```python
-# Enable private repos
-.run_function(download_comfy, args=[snapshot_path, True], secrets=[github_secret])
-# Use public repos only
-# .run_function(download_comfy, args=[snapshot_path, False])
-```
-
-## WebSocket Communication
-
-The `process_job` function in `comfy/comfy_utils.py` handles the main workflow and communicates progress via WebSockets. Here's what it sends:
-
-- Job Started:
-
-  ```json
-  {
-    "type": "job_started",
-    "data": {
-      "process_id": string,
-      "client_id": string,
-      "provider_metadata": { /* Information about the modal worker */ },
-      "server_connection_time": number,
-      "execution_delay_time": number
-    }
-  }
-  ```
-
-- Job Progress:
-
-  ```json
-  {
-    "type": "job_progress",
-    "data": {
-      // ... All fields in the job_started message
-      "percentage": number
-    }
-  }
-  ```
-
-- Job Completed:
-
-  ```json
-  {
-    "type": "job_completed",
-    "data": {
-      // ... All fields in the job_started message
-    }
-  }
-  ```
-
-- Job Failed:
-
-  ```json
-  {
-    "type": "job_failed",
-    "data": {
-      // ... All fields in the job_started message
-      "error_message": string
-    }
-  }
-  ```
-
 ## Using Private GitHub Repositories
 
 If you need to use private GitHub repositories in your snapshot, you'll need to:
@@ -116,26 +53,16 @@ If you need to use private GitHub repositories in your snapshot, you'll need to:
    - Give it a name and select the `repo` scope
    - Copy the generated token
 
-2. Set the `GITHUB_TOKEN` environment variable:
-   
+2. Set the `GITHUB_TOKEN` environment variable in modal:
+
+- Using the modal CLI:
+
   ```bash
-  # In your shell
-  export GITHUB_TOKEN=your_token_here
-  
-  # Or in Modal
+  # Using the modal CLI
   modal secret create github-token GITHUB_TOKEN=your_token_here
   ```
 
-  Then in your Modal app:
-  ```python
-  from modal import Secret
-  
-  github_secret = Secret.from_name("github-token")
-  
-  @stub.function(secrets=[github_secret])
-  def my_function():
-      # Your code here
-  ```
+- Using the modal web interface: https://modal.com/docs/guide/secrets
 
 If you try to access a private repository without setting up the token, you'll get an error message with instructions.
 
