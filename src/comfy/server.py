@@ -5,6 +5,8 @@ import requests
 import threading
 from .config import ComfyConfig
 from ..lib.exceptions import ServerStartupError
+from .models import QueuePromptData
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -12,11 +14,13 @@ logger = logging.getLogger(__name__)
 class ComfyServer:
     """Manages ComfyUI server lifecycle."""
 
-    def __init__(self, config: ComfyConfig):
+    def __init__(self, config: ComfyConfig = ComfyConfig()):
         self.config = config
         self.process = None
 
-    def _build_command(self, cpu_only: bool = False) -> list[str]:
+    def _build_command(
+        self,
+    ) -> list[str]:
         """Build the command to start the ComfyUI server."""
         command = [
             "python",
@@ -24,9 +28,35 @@ class ComfyServer:
             "--disable-auto-launch",
             "--disable-metadata",
         ]
-        if cpu_only:
+        # TODO: Maybe reference comfy's cli args file here as this can quickly become a mess
+        if self.config.GPU_ONLY:
+            command.append("--gpu-only")
+        elif self.config.HIGH_VRAM:
+            command.append("--high-vram")
+        elif self.config.CPU_ONLY:
             command.append("--cpu")
         return command
+
+    def queue_prompt(self, data: QueuePromptData):
+        import urllib
+
+        serialized = json.dumps(data).encode("utf-8")
+        req = urllib.request.Request(
+            f"http://{self.config.SERVER_HOST}:{self.config.SERVER_PORT}/prompt",
+            data=serialized,
+        )
+
+        try:
+            response = urllib.request.urlopen(req)
+            return json.loads(response.read())
+        except urllib.error.HTTPError as e:
+            if e.code == 400:
+                error_data = json.loads(e.read())
+                raise ValueError(
+                    f"Comfy error: {error_data.get('error', 'Unknown error')}, Node errors: {error_data.get('node_errors', {})}"
+                )
+            else:
+                raise Exception("Error while queueing prompt.")
 
     def start(self, cpu_only: bool = False) -> None:
         """

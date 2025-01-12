@@ -1,9 +1,7 @@
 import json
-import logging
 from .job_progress import ComfyJob
 import websocket
 import time
-from typing import TypedDict
 from ..lib.utils import deep_merge, get_time_ms
 import asyncio
 from ..lib.messaging import (
@@ -17,6 +15,7 @@ from .models import (
     ExecutionCallbacks,
     PerformanceMetrics,
     BaseWorkerResponse,
+    QueuePromptData,
 )
 from ..lib.exceptions import WebSocketError, ExecutionError
 from ..lib.logger import logger
@@ -158,30 +157,6 @@ async def run_prompt(data: Input, websockets=True, on_ws_message=None):
     finally:
         if server_ws_connection:
             server_ws_connection.close()
-
-
-class QueuePromptData(TypedDict):
-    prompt: dict
-    client_id: str
-
-
-def queue_prompt(data: QueuePromptData):
-    import urllib
-
-    serialized = json.dumps(data).encode("utf-8")
-    req = urllib.request.Request("http://localhost:8188/prompt", data=serialized)
-
-    try:
-        response = urllib.request.urlopen(req)
-        return json.loads(response.read())
-    except urllib.error.HTTPError as e:
-        if e.code == 400:
-            error_data = json.loads(e.read())
-            raise ValueError(
-                f"Comfy error: {error_data.get('error', 'Unknown error')}, Node errors: {error_data.get('node_errors', {})}"
-            )
-        else:
-            raise Exception("Error while queueing prompt.")
 
 
 async def execute(
