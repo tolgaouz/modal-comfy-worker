@@ -11,5 +11,9 @@ class ComfyConfig(BaseSettings):
     SERVER_TIMEOUT: int = 600
     SERVER_CHECK_DELAY: float = 2.0
 
+    GPU_ONLY: bool = False
+    HIGH_VRAM: bool = False
+    CPU_ONLY: bool = False
+
     class Config:
         env_prefix = "COMFY_"
