@@ -1,5 +1,5 @@
 from modal import Secret, Image, App, Volume
-from ...workflow import APP_NAME, VOLUME_NAME
+from .workflow import APP_NAME, VOLUME_NAME
 
 image = (
     Image.debian_slim()

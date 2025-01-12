@@ -1,14 +1,14 @@
 from modal import Secret, enter, App, web_endpoint, Volume
 
 from lib.exceptions import WebSocketError
-from ...comfy.download_comfy import download_comfy
-from ...comfy.server import ComfyServer
-from ...lib.base_image import base_image
-from ...comfy.models import ExecutionData, ExecutionCallbacks
+from ...src.comfy.download_comfy import download_comfy
+from ...src.comfy.server import ComfyServer
+from ...src.lib.base_image import base_image
+from ...src.comfy.models import ExecutionData, ExecutionCallbacks
 import websocket
-from ...lib.logger import logger
-from ...lib.messaging import send_ws_message
-from ...lib.utils import get_time_ms
+from ...src.lib.logger import logger
+from ...src.lib.messaging import send_ws_message
+from ...src.lib.utils import get_time_ms
 
 snapshot_path = "./snapshot.json"
 
