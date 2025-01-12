@@ -19,15 +19,6 @@ class TimestampedData(TypedDict):
     client_id: str
 
 
-def create_timestamped_data(prompt_id: str, data: JobData) -> TimestampedData:
-    return {
-        "timestamp": get_time_ms(),
-        "prompt_id": prompt_id,
-        "process_id": data.process_id,
-        "client_id": data.client_id,
-    }
-
-
 def send_ws_message(
     server_ws_connection: websocket.WebSocket,
     type: Literal[
