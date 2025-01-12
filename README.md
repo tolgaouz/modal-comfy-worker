@@ -75,3 +75,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is open-sourced under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## TODO
+
+- [ ] Add a way to run the ComfyUI interactive server with ComfyUI-Mananager properly working.
+- [ ] Add streaming output examples
+- [ ] Add model file caching to the container start-up functions to use Modal's snapshot caching.
