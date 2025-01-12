@@ -118,15 +118,13 @@ def clone_custom_nodes(custom_nodes: Dict[str, Dict], comfyui_path: str) -> None
 
 
 def download_comfy(snapshot_path: str):
-    path = os.path.join("/root", snapshot_path)
-
-    with open(path, "r") as file:
+    with open(snapshot_path, "r") as file:
         json_data = file.read()
 
     data = json.loads(json_data)
 
-    comfyui_repo_url = "https://github.com/comfyanonymous/ComfyUI"
-    comfyui_path = "/root/ComfyUI"
+    comfyui_repo_url = ComfyConfig.COMFYUI_REPO
+    comfyui_path = ComfyConfig.COMFYUI_PATH
     comfy_commit_hash = data["comfyui"]
 
     clone_repository(comfyui_repo_url, comfy_commit_hash, comfyui_path)

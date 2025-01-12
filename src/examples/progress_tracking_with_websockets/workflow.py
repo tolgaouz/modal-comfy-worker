@@ -1,29 +1,30 @@
-from modal import Secret, enter, App, web_endpoint, Volume
-
-from lib.exceptions import WebSocketError
-from ...src.comfy.download_comfy import download_comfy
-from ...src.comfy.server import ComfyServer
-from ...src.lib.base_image import base_image
-from ...src.comfy.models import ExecutionData, ExecutionCallbacks
+from modal import Secret, enter, App, web_endpoint, Volume, web_server
+from ...lib.exceptions import WebSocketError
+from ...comfy.download_comfy import download_comfy
+from ...comfy.server import ComfyServer
+from ...lib.base_image import base_image
+from ...comfy.models import ExecutionData, ExecutionCallbacks
 import websocket
-from ...src.lib.logger import logger
-from ...src.lib.messaging import send_ws_message
-from ...src.lib.utils import get_time_ms
+from ...lib.logger import logger
+from ...lib.messaging import send_ws_message
+from ...lib.utils import get_time_ms
+import os
 
-snapshot_path = "./snapshot.json"
+local_snapshot_path = os.path.join(os.path.dirname(__file__), "snapshot.json")
+target_snapshot_path = "/root/snapshot.json"
 
 github_secret = Secret.from_name("github-secret")
 
 image = base_image.copy_local_file(
-    snapshot_path,
-    "/root/snapshot.json",
-).run_function(download_comfy, args=[snapshot_path], secrets=[github_secret])
+    local_snapshot_path,
+    target_snapshot_path,
+).run_function(download_comfy, args=[target_snapshot_path], secrets=[github_secret])
 
 APP_NAME = "comfy-flux-ws"
 VOLUME_NAME = f"{APP_NAME}-volume"
 
 app = App(APP_NAME)
-volume = Volume.from_name(VOLUME_NAME)
+volume = Volume.from_name(VOLUME_NAME, create_if_missing=True)
 
 
 class WebsocketsRunInput(ExecutionData):
@@ -36,7 +37,7 @@ class WebsocketsRunInput(ExecutionData):
     secrets=[],
     # Add in your volumes
     volumes={"/volume": volume},
-    gpu="T4",
+    gpu="l4",
     # allow_concurrent_inputs=3,
     # concurrency_limit=10,
     # timeout=38,
@@ -134,3 +135,21 @@ class ComfyWorkflow:
         finally:
             if server_ws_connection:
                 server_ws_connection.close()
+
+
+@app.function(
+    allow_concurrent_inputs=10,
+    concurrency_limit=1,
+    image=image,
+    volumes={"/volume": volume},
+    container_idle_timeout=30,
+    timeout=1800,
+    gpu="l4",
+    cpu=1,
+    memory=10240,
+)
+@web_server(8000, startup_timeout=60)
+def ui():
+    server = ComfyServer()
+    server.start()
+    server.wait_until_ready()

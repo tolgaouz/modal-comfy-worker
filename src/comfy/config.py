@@ -1,7 +1,7 @@
-from pydantic import BaseSettings
+from pydantic import BaseModel
 
 
-class ComfyConfig(BaseSettings):
+class ComfyConfig(BaseModel):
     """Configuration settings for ComfyUI installation and setup."""
 
     COMFYUI_REPO: str = "https://github.com/comfyanonymous/ComfyUI"
@@ -17,3 +17,4 @@ class ComfyConfig(BaseSettings):
 
     class Config:
         env_prefix = "COMFY_"
+        frozen = True  # Makes the config immutable

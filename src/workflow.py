@@ -3,16 +3,18 @@ from .comfy.download_comfy import download_comfy
 from .comfy.server import ComfyServer
 from .lib.base_image import base_image
 from .comfy.models import ExecutionData
+import os
 
 # This is the path to the snapshot.json file that will be used to launch the ComfyUI server.
-snapshot_path = "./snapshot.example.json"
+local_snapshot_path = os.path.join(os.path.dirname(__file__), "snapshot.example.json")
+target_snapshot_path = "./snapshot.json"
 
 github_secret = Secret.from_name("github-secret")
 
 image = base_image.copy_local_file(
-    snapshot_path,
-    "/root/snapshot.json",
-).run_function(download_comfy, args=[snapshot_path], secrets=[github_secret])
+    local_snapshot_path,
+    target_snapshot_path,
+).run_function(download_comfy, args=[target_snapshot_path], secrets=[github_secret])
 
 APP_NAME = "comfy-worker"
 VOLUME_NAME = f"{APP_NAME}-volume"

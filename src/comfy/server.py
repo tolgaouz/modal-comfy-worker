@@ -3,16 +3,15 @@ import time
 import logging
 import requests
 import threading
-
-from lib.utils import get_time_ms
 from .config import ComfyConfig
+from ..lib.utils import get_time_ms
 from ..lib.exceptions import ServerStartupError
 from .models import ExecutionResult, QueuePromptData
 import json
 import asyncio
 import websocket
 from .models import ExecutionData, ExecutionCallbacks
-from .job_progress import ComfyJob, ComfyStatusLog
+from .job_progress import ComfyJobProgress, ComfyStatusLog
 from ..lib.exceptions import ExecutionError
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ class ComfyServer:
         "completed",
     ]
 
-    def __init__(self, config: ComfyConfig = ComfyConfig()):
+    def __init__(self, config: ComfyConfig = ComfyConfig):
         self.config = config
         self.process = None
         self.is_executing = False
@@ -177,7 +176,7 @@ class ComfyServer:
         ws = None
 
         try:
-            comfy_job = ComfyJob(data.prompt)
+            comfy_job = ComfyJobProgress(data.prompt)
             queue_start_time = get_time_ms()
             queue_response = self.queue_prompt(
                 {"prompt": data.prompt, "client_id": data.process_id}
