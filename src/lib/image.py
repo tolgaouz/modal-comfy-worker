@@ -1,4 +1,7 @@
-from modal import Image
+from modal import Image, Secret
+from typing import Optional
+
+from ..comfy.download_comfy import download_comfy
 
 base_image = (
     Image.debian_slim(python_version="3.12")
@@ -24,3 +27,18 @@ base_image = (
         }
     )
 )
+
+
+def get_comfy_image(
+    local_snapshot_path: str, github_secret: Optional[Secret] = None
+) -> Image:
+    return (
+        base_image.copy_local_file(
+            local_snapshot_path,
+            "/root/snapshot.json",
+        )
+        .run_function(
+            download_comfy, args=["/root/snapshot.json"], secrets=[github_secret]
+        )
+        .run_commands(["rm -rf /root/ComfyUI/models"])
+    )
