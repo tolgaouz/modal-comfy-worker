@@ -122,20 +122,22 @@ def download_comfy(snapshot_path: str):
         json_data = file.read()
 
     data = json.loads(json_data)
+    config = ComfyConfig()
+    config.CPU_ONLY = True
 
-    comfyui_repo_url = ComfyConfig.COMFYUI_REPO
-    comfyui_path = ComfyConfig.COMFYUI_PATH
+    comfyui_repo_url = config.COMFYUI_REPO
+    comfyui_path = config.COMFYUI_PATH
     comfy_commit_hash = data["comfyui"]
 
     clone_repository(comfyui_repo_url, comfy_commit_hash, comfyui_path)
     clone_custom_nodes(data["git_custom_nodes"], comfyui_path)
 
     # Use ComfyServer instead of direct server management
-    config = ComfyConfig()
     server = ComfyServer(config)
 
     logger.info("Starting ComfyUI server to install dependencies")
-    server.start(cpu_only=True)
+
+    server.start()
 
     try:
         server.wait_until_ready()
