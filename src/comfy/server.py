@@ -30,8 +30,13 @@ class ComfyServer:
         "completed",
     ]
 
-    def __init__(self, config: ComfyConfig = ComfyConfig):
-        self.config = config
+    def __init__(self, config: ComfyConfig = None):
+        """Initialize ComfyServer with configuration.
+
+        Args:
+            config: Optional ComfyConfig instance. If None, default config will be used.
+        """
+        self.config = config if config is not None else ComfyConfig()
         self.process = None
         self.is_executing = False
 
@@ -44,6 +49,7 @@ class ComfyServer:
             "main.py",
             "--disable-auto-launch",
             "--disable-metadata",
+            "--listen",
         ]
         # TODO: Maybe reference comfy's cli args file here as this can quickly become a mess
         if self.config.GPU_ONLY:
@@ -75,7 +81,7 @@ class ComfyServer:
             else:
                 raise Exception("Error while queueing prompt.")
 
-    def start(self, cpu_only: bool = False) -> None:
+    def start(self) -> None:
         """
         Start the ComfyUI server process.
 
@@ -83,12 +89,11 @@ class ComfyServer:
             ServerStartupError: If the server process fails to start
         """
         try:
-            command = self._build_command(cpu_only)
+            command = self._build_command()
             self.process = subprocess.Popen(
                 command,
                 cwd=self.config.COMFYUI_PATH,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1,
                 universal_newlines=True,
@@ -109,10 +114,6 @@ class ComfyServer:
             target=stream_output, args=(self.process.stdout, "COMFY-OUT"), daemon=True
         ).start()
 
-        threading.Thread(
-            target=stream_output, args=(self.process.stderr, "COMFY-ERR"), daemon=True
-        ).start()
-
     def wait_until_ready(self) -> bool:
         """
         Wait for server to become responsive.
@@ -125,23 +126,15 @@ class ComfyServer:
 
         while time.time() < deadline:
             try:
-                requests.head(url).raise_for_status()
-                logger.info("ComfyUI server is ready")
-                return True
-            except requests.RequestException:
-                # Check if process has terminated
-                if self.process and self.process.poll() is not None:
-                    stderr = (
-                        self.process.stderr.read()
-                        if self.process.stderr
-                        else "No error output"
-                    )
-                    raise ServerStartupError(
-                        "Server process terminated unexpectedly",
-                        {"stderr": stderr, "return_code": self.process.returncode},
-                    )
-                time.sleep(self.config.SERVER_CHECK_DELAY)
+                response = requests.head(url)
+                if response.status_code == 200:
+                    logger.info("ComfyUI server is reachable.")
+                    return True
 
+            except requests.RequestException:
+                pass
+
+            time.sleep(self.config.SERVER_CHECK_DELAY)
         raise ServerStartupError(
             f"Server failed to start within {self.config.SERVER_TIMEOUT}s",
             {"url": url, "timeout": self.config.SERVER_TIMEOUT},

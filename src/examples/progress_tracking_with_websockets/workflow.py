@@ -1,8 +1,7 @@
 from modal import Secret, enter, App, web_endpoint, Volume, web_server
 from ...lib.exceptions import WebSocketError
-from ...comfy.download_comfy import download_comfy
-from ...comfy.server import ComfyServer
-from ...lib.base_image import base_image
+from ...comfy.server import ComfyServer, ComfyConfig
+from ...lib.image import get_comfy_image
 from ...comfy.models import ExecutionData, ExecutionCallbacks
 import websocket
 from ...lib.logger import logger
@@ -11,14 +10,10 @@ from ...lib.utils import get_time_ms
 import os
 
 local_snapshot_path = os.path.join(os.path.dirname(__file__), "snapshot.json")
-target_snapshot_path = "/root/snapshot.json"
 
 github_secret = Secret.from_name("github-secret")
 
-image = base_image.copy_local_file(
-    local_snapshot_path,
-    target_snapshot_path,
-).run_function(download_comfy, args=[target_snapshot_path], secrets=[github_secret])
+image = get_comfy_image(local_snapshot_path, github_secret)
 
 APP_NAME = "comfy-flux-ws"
 VOLUME_NAME = f"{APP_NAME}-volume"
@@ -36,7 +31,7 @@ class WebsocketsRunInput(ExecutionData):
     # Add in your secrets
     secrets=[],
     # Add in your volumes
-    volumes={"/volume": volume},
+    volumes={"/root/ComfyUI/models": volume},
     gpu="l4",
     # allow_concurrent_inputs=3,
     # concurrency_limit=10,
@@ -141,15 +136,15 @@ class ComfyWorkflow:
     allow_concurrent_inputs=10,
     concurrency_limit=1,
     image=image,
-    volumes={"/volume": volume},
+    volumes={"/root/ComfyUI/models": volume},
     container_idle_timeout=30,
     timeout=1800,
     gpu="l4",
     cpu=1,
     memory=10240,
 )
-@web_server(8000, startup_timeout=60)
+@web_server(8188, startup_timeout=120)
 def ui():
-    server = ComfyServer()
+    config = ComfyConfig(SERVER_HOST="0.0.0.0", SERVER_PORT=8188)
+    server = ComfyServer(config=config)
     server.start()
-    server.wait_until_ready()
