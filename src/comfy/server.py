@@ -89,6 +89,10 @@ class ComfyServer:
             ServerStartupError: If the server process fails to start
         """
         try:
+            if self.process is not None:
+                logger.debug("ComfyUI server already running, skipping start")
+                return
+
             command = self._build_command()
             self.process = subprocess.Popen(
                 command,
