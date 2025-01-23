@@ -2,7 +2,7 @@
 
 This repository is aimed to be a template for creating Modal workers for running ComfyUI workflows. It will be extended with new features and improvements over time. Currently it supports:
 
-- 🔌 WebSocket communication with the server (Optional, will return via REST API when completed if not enabled) ([see example](examples/progress_tracking_with_websockets/workflow.py))
+- 🔌 WebSocket communication with the server (Optional, will return via REST API when completed if not enabled) ([see example](src/examples/progress_tracking_with_websockets/workflow.py))
 - 💾 Volume updaters for using custom models (see the `volume_updaters` folder for examples)
 - 🔒 Installing custom nodes from private repos
 - 📊 Progress reporting and calculating the percentage of completion
