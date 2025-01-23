@@ -130,7 +130,8 @@ def download_comfy(snapshot_path: str):
     comfy_commit_hash = data["comfyui"]
 
     clone_repository(comfyui_repo_url, comfy_commit_hash, comfyui_path)
-    clone_custom_nodes(data["git_custom_nodes"], comfyui_path)
+    if data["git_custom_nodes"] and len(data["git_custom_nodes"]) > 0:
+        clone_custom_nodes(data["git_custom_nodes"], comfyui_path)
 
     # Use ComfyServer instead of direct server management
     server = ComfyServer(config)
