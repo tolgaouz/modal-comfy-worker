@@ -140,11 +140,10 @@ class ComfyWorkflow:
     container_idle_timeout=30,
     timeout=1800,
     gpu="l4",
-    cpu=1,
-    memory=10240,
 )
 @web_server(8188, startup_timeout=120)
 def ui():
+    logger.info("Starting UI")
     config = ComfyConfig(SERVER_HOST="0.0.0.0", SERVER_PORT=8188)
     server = ComfyServer(config=config)
     server.start()
