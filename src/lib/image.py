@@ -6,7 +6,13 @@ from ..comfy.download_comfy import download_comfy
 base_image = (
     Image.debian_slim(python_version="3.12")
     .apt_install("git", "wget")
-    .pip_install("websocket-client", "pydantic==1.10.11", "cupy-cuda12x", "requests")
+    .pip_install(
+        "websocket-client",
+        "pydantic",
+        "cupy-cuda12x",
+        "requests",
+        "huggingface_hub[hf_transfer]==0.26.2",
+    )
     .apt_install(
         "libopengl0", "libcairo2-dev", "libjpeg-dev", "libgif-dev", "pkg-config"
     )
@@ -24,6 +30,7 @@ base_image = (
         {
             "LD_LIBRARY_PATH": "/usr/local/lib/python3.12/site-packages/nvidia/cuda_nvrtc/lib",
             "SAFETENSORS_FAST_GPU": "1",
+            "HF_HUB_ENABLE_HF_TRANSFER": "1",
         }
     )
 )
