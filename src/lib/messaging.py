@@ -1,10 +1,8 @@
-from typing import Dict, Any, Protocol, TypedDict, Literal
+from typing import Any, Protocol, TypedDict, Literal
 import websocket
-from ..comfy.job_progress import ComfyStatusLog
 from .json_encoder import JSONEncoder
 import json
 from ..lib.exceptions import WebSocketError
-from .utils import get_time_ms
 
 
 class JobData(Protocol):
