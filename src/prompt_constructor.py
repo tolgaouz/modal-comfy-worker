@@ -8,7 +8,7 @@ class WorkflowInput(BaseModel):
     prompt: str
 
 
-async def construct_workflow_prompt(input: WorkflowInput) -> dict:
+def construct_workflow_prompt(input: WorkflowInput) -> dict:
     """
     Generate a keyframe prompt based on the provided settings.
     """
