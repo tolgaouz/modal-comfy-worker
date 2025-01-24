@@ -38,6 +38,7 @@ class ComfyServer:
         """
         self.config = config if config is not None else ComfyConfig()
         self.process = None
+        self.is_ready = False
         self.is_executing = False
 
     def _build_command(
@@ -133,6 +134,7 @@ class ComfyServer:
                 response = requests.head(url)
                 if response.status_code == 200:
                     logger.info("ComfyUI server is reachable.")
+                    self.is_ready = True
                     return True
 
             except requests.RequestException:
