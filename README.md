@@ -1,4 +1,4 @@
-# Modal ComfyUI API Deployment Repository
+# Modal ComfyUI API Worker
 
 This repository provides a template for deploying ComfyUI workflows as robust and scalable APIs using [Modal](https://modal.com/). It offers an opinionated yet flexible structure to streamline the process of turning your ComfyUI workflows into production-ready services.
 
@@ -45,7 +45,7 @@ This repository is designed to help developers easily deploy ComfyUI workflows a
 
 - Ensure you have a Modal account and the Modal CLI installed and configured.
 - Modify the files in this repository, especially `workflow.py` and `prompt_constructor.py`, to match your ComfyUI workflow and API requirements.
-- Customize `prompt.json` to define the mapping between API request parameters and ComfyUI node inputs.
+- Add your comfyui workflow (exported via the API mode) to the `prompt.json` file.
 - Adjust `snapshot.json` to include any custom ComfyUI nodes you need.
 
 ### **Deploy your Modal app:**
@@ -118,9 +118,9 @@ By using this routing convention, you can build a well-organized and easily acce
 
 Remember that this repository is a starting point. You will likely need to customize the files to fit your specific ComfyUI workflows and API requirements.
 
-- **`src/workflow.py`:**  This file contains the core Modal application logic, including ComfyUI server launching, workflow execution, and API endpoint definitions.  Modify this to integrate your specific ComfyUI workflow and adjust the API endpoints as needed.
-- **`src/prompt_constructor.py`:**  Implement the logic to construct ComfyUI prompts dynamically based on API request parameters.  Adapt the `PromptConstructor` class to handle the inputs and node mappings for your workflows.
-- **`prompt.json`:**  Define the mapping between API request parameters and ComfyUI node inputs in this JSON file.
+- **`src/workflow.py`:**  This file serves as the entry point for the Modal app. It defines the router and the ComfyUI server.
+- **`src/prompt_constructor.py`:**  Implement the logic to construct ComfyUI prompts dynamically based on API request parameters.
+- **`prompt.json`:**  Your comfyui workflow (exported via the API mode)
 - **`snapshot.json`:**  Add or modify entries in this file to include the custom ComfyUI nodes required by your workflows.
 - **`src/comfy/server.py`, `src/comfy/models.py`, `src/lib/*`:**  These files provide the underlying boilerplate and utility functions. You may need to adjust them in advanced use cases, but for most workflows, customization will primarily focus on `workflow.py`, `prompt_constructor.py`, `prompt.json`, and `snapshot.json`.
 
