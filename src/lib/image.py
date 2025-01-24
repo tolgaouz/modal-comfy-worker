@@ -37,15 +37,30 @@ base_image = (
 
 
 def get_comfy_image(
-    local_snapshot_path: str, github_secret: Optional[Secret] = None
+    local_snapshot_path: str,
+    local_prompt_path: str,
+    github_secret: Optional[Secret] = None,
 ) -> Image:
+    """
+    Prepares a container image with ComfyUI setup and standardized file paths.
+
+    This function copies the snapshot.json and prompt.json files from local paths into
+    the container at standardized locations (/root/snapshot.json and /root/prompt.json).
+    Using standardized paths ensures consistent access across the application.
+
+    Args:
+        local_snapshot_path: Path to the local snapshot.json file
+        local_prompt_path: Path to the local prompt.json file
+        github_secret: Optional GitHub secret for private repository access
+
+    Returns:
+        Image: Configured Modal container image with ComfyUI setup
+    """
     return (
-        base_image.copy_local_file(
-            local_snapshot_path,
-            "/root/snapshot.json",
-        )
+        base_image.add_local_file(local_snapshot_path, "/root/snapshot.json", copy=True)
         .run_function(
             download_comfy, args=["/root/snapshot.json"], secrets=[github_secret]
         )
         .run_commands(["rm -rf /root/ComfyUI/models"])
+        .add_local_file(local_prompt_path, "/root/prompt.json", copy=True)
     )

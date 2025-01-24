@@ -38,6 +38,7 @@ class ComfyServer:
         """
         self.config = config if config is not None else ComfyConfig()
         self.process = None
+        self.is_ready = False
         self.is_executing = False
 
     def _build_command(
@@ -133,6 +134,7 @@ class ComfyServer:
                 response = requests.head(url)
                 if response.status_code == 200:
                     logger.info("ComfyUI server is reachable.")
+                    self.is_ready = True
                     return True
 
             except requests.RequestException:
@@ -148,7 +150,6 @@ class ComfyServer:
         self,
         data: ExecutionData,
         callbacks: ExecutionCallbacks = ExecutionCallbacks(),
-        timeout: int = 60,
     ):
         """
             Asynchronously execute a ComfyUI prompt with websocket-based monitoring and callbacks.
@@ -256,7 +257,7 @@ class ComfyServer:
             # Start monitoring task and wait for result with timeout
             monitor_task = asyncio.create_task(monitor_ws())
             try:
-                return await asyncio.wait_for(result_future, timeout=timeout)
+                return await result_future
             except asyncio.TimeoutError:
                 monitor_task.cancel()
                 raise ExecutionError("Execution timed out")
