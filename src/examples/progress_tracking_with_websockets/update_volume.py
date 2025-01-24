@@ -1,5 +1,4 @@
-from modal import Secret, Image, App, Volume
-from .workflow import APP_NAME, VOLUME_NAME
+from modal import Image, App, Volume
 
 image = (
     Image.debian_slim()
@@ -7,20 +6,14 @@ image = (
     .env({"HF_HUB_ENABLE_HF_TRANSFER": "1"})
 )
 
-app = App(f"{APP_NAME}-update-volume")
-volume = Volume.from_name(VOLUME_NAME)
+app = App("comfy-flux-ws-update-volume")
+volume = Volume.from_name("comfy-flux-ws-volume")
 
 models_to_download = [
-    # format is (huggingface repo_id, the model filename, comfyui models subdirectory we want to save the model in)
     (
-        "black-forest-labs/FLUX.1-schnell",
-        "vae.safetensors",
-        "vae",
-    ),
-    (
-        "black-forest-labs/FLUX.1-schnell",
-        "flux1-schnell.safetensors",
-        "unet",
+        "Comfy-Org/flux1-dev",
+        "flux1-dev-fp8.safetensors",
+        "checkpoints",
     ),
     (
         "comfyanonymous/flux_text_encoders",
@@ -35,7 +28,6 @@ models_to_download = [
     volumes={"/volume": volume},
     image=image,
     timeout=3600,
-    secrets=[Secret.from_name("huggingface-secret")],
 )
 def hf_download(repo_id: str, filename: str, model_type: str):
     from huggingface_hub import hf_hub_download
