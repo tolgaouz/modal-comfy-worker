@@ -40,10 +40,7 @@ def get_comfy_image(
     local_snapshot_path: str, github_secret: Optional[Secret] = None
 ) -> Image:
     return (
-        base_image.copy_local_file(
-            local_snapshot_path,
-            "/root/snapshot.json",
-        )
+        base_image.add_local_file(local_snapshot_path, "/root/snapshot.json", copy=True)
         .run_function(
             download_comfy, args=["/root/snapshot.json"], secrets=[github_secret]
         )

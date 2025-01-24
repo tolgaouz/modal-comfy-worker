@@ -1,11 +1,11 @@
-from modal import Secret, enter, App, web_endpoint, Volume
-from .comfy.server import ComfyServer
+from modal import Secret, App, Volume, asgi_app
 from .lib.image import get_comfy_image
-from .comfy.models import ExecutionData
 import os
+from .lib.router import ModalRouter
+from .prompt_constructor import WorkflowInput
 
 # This is the path to the snapshot.json file that will be used to launch the ComfyUI server.
-local_snapshot_path = os.path.join(os.path.dirname(__file__), "snapshot.example.json")
+local_snapshot_path = os.path.join(os.path.dirname(__file__), "snapshot.json")
 
 github_secret = Secret.from_name("github-secret")
 
@@ -15,35 +15,34 @@ APP_NAME = "comfy-worker"
 VOLUME_NAME = f"{APP_NAME}-volume"
 
 app = App(APP_NAME)
-volume = Volume.from_name(VOLUME_NAME)
+volume = Volume.from_name(VOLUME_NAME, create_if_missing=True)
 
 
-@app.cls(
+# Your processing function
+async def process_job(payload: WorkflowInput):
+    try:
+        return {"result": f"Generated image for: {payload.prompt}"}
+    except Exception as e:
+        raise Exception(f"Error processing job: {e}")
+
+
+# Create the router with the payload type
+router = ModalRouter(
+    app=app,
     image=image,
-    # Add in your secrets
-    secrets=[],
-    # Add in your volumes
     volumes={"/root/ComfyUI/models": volume},
-    gpu="T4",
-    # allow_concurrent_inputs=3,
-    # concurrency_limit=10,
-    # timeout=38,
-    container_idle_timeout=60 * 2,
-    # keep_warm=1,
-    retries=3,
+    run_job_function=process_job,
+    payload_type=WorkflowInput,
 )
-class ComfyWorkflow:
-    @enter()
-    def run_this_on_container_startup(self):
-        self.server = ComfyServer()
-        self.server.start()
-        self.server.wait_until_ready()
 
-    @web_endpoint(method="POST")
-    async def infer(self, data: ExecutionData):
-        # Execute the prompt
-        execution_result = await self.server.execute(data=data)
-        return execution_result
+
+@app.function(
+    image=image,
+    volumes={"/root/ComfyUI/models": volume},
+)
+@asgi_app()
+def comfy_worker():
+    return router.asgi_app()
 
 
 """
@@ -52,16 +51,17 @@ You can use this to debug your workflows or send them to people.
 @app.function(
     allow_concurrent_inputs=10,
     concurrency_limit=1,
-    secrets=[aws_secret, upstash_secret],
     image=image,
     volumes={"/root/ComfyUI/models": volume},
     container_idle_timeout=30,
     timeout=1800,
-    gpu="H100",
+    gpu="l4",
     cpu=1,
     memory=10240,
 )
-@web_server(8000, startup_timeout=120)
+@web_server(8188, startup_timeout=120)
 def ui():
-    launch_comfy(8000, gpu_only=False, wait_for_ready=False)
+    config = ComfyConfig(SERVER_HOST="0.0.0.0", SERVER_PORT=8188)
+    server = ComfyServer(config=config)
+    server.start()
 """
