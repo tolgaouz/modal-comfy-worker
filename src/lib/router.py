@@ -15,6 +15,7 @@ def create_run_job(
         image=image,
         volumes=volumes,
         container_idle_timeout=60 * 2,
+        gpu="L4",
     )
     @wraps(run_job_function)
     async def run_job(payload: dict):

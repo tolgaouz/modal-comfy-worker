@@ -3,13 +3,17 @@ from .lib.image import get_comfy_image
 import os
 from .lib.router import ModalRouter
 from .prompt_constructor import WorkflowInput
+from .comfy.server import ComfyServer
+from .prompt_constructor import construct_workflow_prompt
+from .comfy.models import ExecutionData
 
-# This is the path to the snapshot.json file that will be used to launch the ComfyUI server.
+# This is the path to the snapshot.json and prompt.json files that will be copied into the container
 local_snapshot_path = os.path.join(os.path.dirname(__file__), "snapshot.json")
+local_prompt_path = os.path.join(os.path.dirname(__file__), "prompt.json")
 
 github_secret = Secret.from_name("github-secret")
 
-image = get_comfy_image(local_snapshot_path, github_secret)
+image = get_comfy_image(local_snapshot_path, local_prompt_path, github_secret)
 
 APP_NAME = "comfy-worker"
 VOLUME_NAME = f"{APP_NAME}-volume"
@@ -21,7 +25,11 @@ volume = Volume.from_name(VOLUME_NAME, create_if_missing=True)
 # Your processing function
 async def process_job(payload: WorkflowInput):
     try:
-        return {"result": f"Generated image for: {payload.prompt}"}
+        server = ComfyServer()
+        server.start()
+        server.wait_until_ready()
+        prompt = construct_workflow_prompt(payload)
+        return await server.execute(ExecutionData(prompt=prompt, process_id="123"))
     except Exception as e:
         raise Exception(f"Error processing job: {e}")
 

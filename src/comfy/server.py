@@ -257,7 +257,7 @@ class ComfyServer:
             # Start monitoring task and wait for result with timeout
             monitor_task = asyncio.create_task(monitor_ws())
             try:
-                return await asyncio.wait_for(result_future)
+                return await result_future
             except asyncio.TimeoutError:
                 monitor_task.cancel()
                 raise ExecutionError("Execution timed out")
