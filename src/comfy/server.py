@@ -150,7 +150,6 @@ class ComfyServer:
         self,
         data: ExecutionData,
         callbacks: ExecutionCallbacks = ExecutionCallbacks(),
-        timeout: int = 60,
     ):
         """
             Asynchronously execute a ComfyUI prompt with websocket-based monitoring and callbacks.
@@ -258,7 +257,7 @@ class ComfyServer:
             # Start monitoring task and wait for result with timeout
             monitor_task = asyncio.create_task(monitor_ws())
             try:
-                return await asyncio.wait_for(result_future, timeout=timeout)
+                return await asyncio.wait_for(result_future)
             except asyncio.TimeoutError:
                 monitor_task.cancel()
                 raise ExecutionError("Execution timed out")
