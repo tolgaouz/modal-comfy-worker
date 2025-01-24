@@ -1,76 +1,136 @@
-# Comfy Modal Worker
+# Modal ComfyUI API Deployment Repository
 
-This repository is aimed to be a template for creating Modal workers for running ComfyUI workflows. It will be extended with new features and improvements over time. Currently it supports:
+This repository provides a template for deploying ComfyUI workflows as robust and scalable APIs using [Modal](https://modal.com/). It offers an opinionated yet flexible structure to streamline the process of turning your ComfyUI workflows into production-ready services.
 
-- 🔌 WebSocket communication with the server (Optional, will return via REST API when completed if not enabled) ([see example](src/examples/progress_tracking_with_websockets/workflow.py))
-- 💾 Volume updaters for using custom models (see the `volume_updaters` folder for examples)
-- 🔒 Installing custom nodes from private repos
-- 📊 Progress reporting and calculating the percentage of completion
-- 📸 Using a snapshot to install custom nodes and specifying the ComfyUI version
-- 🌐 Serving the ComfyUI server as an interactive web server
+## What is this for?
 
-The worker is designed to be modular and easy to extend. It currently uses a single Modal app for all the functionality.
+This repository is designed to help developers easily deploy ComfyUI workflows as APIs. It provides a pre-configured structure and boilerplate code to handle common tasks such as:
 
-## Table of Contents
+- **Running ComfyUI Server:**  Launches a ComfyUI server as a subprocess within a Modal worker.
+- **Workflow Management:**  Provides utilities for queueing prompts, checking job status, and canceling jobs.
+- **API Routing:** Implements a router (`src/lib/router.py`) to expose endpoints for:
+  - **Synchronous and Asynchronous Inference:** Run workflows and get results synchronously or asynchronously.
+  - **Status Checks:** Query the status of running or completed jobs.
+  - **Job Cancellation:** Cancel queued or running jobs.
+- **Custom Node Management:**  Utilizes `snapshot.json` to load custom ComfyUI nodes, supporting private repositories when `GITHUB_TOKEN` is available.
+- **Dynamic Prompt Construction:** Employs `prompt.json` and `prompt_constructor.py` to dynamically generate ComfyUI prompts based on API requests, mapping API inputs to ComfyUI node inputs.
+- **Efficient Model Loading:**  Leverages `volume_updaters` to download models directly to Modal volumes, avoiding the need to include large models in the Docker image and reducing image size.
 
-- [Development](#development)
-- [Deployment](#deployment)
-- [Using Volumes](#using-volumes)
-- [Installing Custom Nodes](#installing-custom-nodes)
+## Key Features
 
-## Development
+- **Opinionated Structure:** Provides a well-defined project structure that promotes maintainability and scalability for your Modal ComfyUI applications.
+- **Ready-to-use ComfyUI Boilerplate:** Includes pre-built logic for launching the ComfyUI server, queueing prompts, and handling events, allowing you to focus on your workflows.
+- **Built-in API Routing:** The `src/lib/router.py` offers a robust and conventional way to manage API endpoints for inference, status checks, and job management. This is not provided by default by Modal and adds significant value for building production APIs.
+- **Dynamic Prompt Generation:**  Easily map API request parameters to ComfyUI workflow inputs using `prompt.json` and `prompt_constructor.py`, making your APIs flexible and user-friendly.
+- **Interactive UI Server:** Alongside the API endpoints, you can also access the standard ComfyUI web interface, allowing for visual workflow editing, manual prompting, and real-time feedback.
+- **Optimized Model Management:**  `volume_updaters` ensure efficient model loading and reduce Docker image size by downloading models to volumes on demand.
+- **Customizable and Extensible:**  The repository is designed to be a starting point. You are expected to adapt and modify the provided files (especially `workflow.py` and `prompt_constructor.py`) to match the specific needs of your ComfyUI workflows. The example implementations in the `examples` folder serve as further guidance.
 
-To run the worker locally:
-`modal serve src.workflow`
-This command will spin up a live development server synced with the remote Modal instance.
+## Getting Started
 
-## Deployment
-
-If you're using modal with a multi environment set up, make sure you set the correct environment:
-`modal config set-environment {env_name}`.
-Then deploy the worker:
-`modal deploy workflow`
-
-## Using Volumes
-
-Volumes in Modal are used to load models into the ComfyUI instance inside workers. Workers may share volumes with other workers or have their own volumes.
-
-I have included example volume updaters in the `volume_updaters` folder. These are used to download models from huggingface and copy them to a volume so that ComfyUI can use them. You may also want to download the models directly into the image but this is not recommended because it will increase the size of the image and slow down the startup time of the worker.
-
-## Installing Custom Nodes
-
-This worker supports installing custom nodes from private repos. You can specify the repos in the `snapshot.json` file. Snapshot structure follows the [Comfy Custom Node](https://github.com/ltdrdata/ComfyUI-Manager) manager snapshot format.  The `comfy/download_comfy.py` script will install the nodes from the `requirements.txt` file in each repo.
-
-Even if you don't use any custom nodes, you should include the `snapshot.json` file in the root of the repo because it installs the ComfyUI version using the commit hash.
-
-## Using Private GitHub Repositories
-
-If you need to use private GitHub repositories in your snapshot, you'll need to:
-
-1. Create a GitHub Personal Access Token (Classic):
-   - Go to GitHub Settings -> Developer Settings -> Personal Access Tokens -> Tokens (classic)
-   - Click "Generate new token (classic)"
-   - Give it a name and select the `repo` scope
-   - Copy the generated token
-
-2. Set the `GITHUB_TOKEN` environment variable in modal:
-
-- Using the modal CLI:
+### **Clone the repository:**
 
   ```bash
-  # Using the modal CLI
-  modal secret create github-token GITHUB_TOKEN=your_token_here
+  git clone <repository-url>
+  cd <repository-name>
   ```
 
-- Using the modal web interface: https://modal.com/docs/guide/secrets
+### **Install dependencies:**
 
-If you try to access a private repository without setting up the token, you'll get an error message with instructions.
+  ```bash
+  pip install -r requirements.txt
+  ```
 
-For more details on creating GitHub tokens, see the [official documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+### **Configure your Modal app:**
+
+- Ensure you have a Modal account and the Modal CLI installed and configured.
+- Modify the files in this repository, especially `workflow.py` and `prompt_constructor.py`, to match your ComfyUI workflow and API requirements.
+- Customize `prompt.json` to define the mapping between API request parameters and ComfyUI node inputs.
+- Adjust `snapshot.json` to include any custom ComfyUI nodes you need.
+
+### **Deploy your Modal app:**
+
+  ```bash
+  modal deploy src.workflow
+  ```
+
+### **Access your API endpoints:**
+
+- After deployment, Modal will provide you with URLs for your API endpoints.
+- **API Endpoints:** Use these endpoints to interact with your ComfyUI workflows programmatically, as described in the "Understanding the Routing" section below.
+- **Interactive UI:** Modal will also provide a separate URL for accessing the ComfyUI interactive user interface. Open this URL in your web browser to access the standard ComfyUI UI. This allows you to:
+  - Visually design and modify workflows.
+  - Manually queue prompts and monitor their progress.
+  - Test workflows and experiment with different parameters directly through the UI.
+  - Get real-time previews of generated images and other outputs.
+
+### Understanding the Routing
+
+The `src/lib/router.py` file is a crucial component of this repository. It implements a simple yet effective routing mechanism for managing API requests related to ComfyUI workflows.
+
+Here's a breakdown of the routing concept:
+
+- **Endpoint Definitions:**  The router defines standard endpoints for interacting with workflows:
+- `/infer`:  For synchronous inference requests (blocking until completion).
+- `/infer_async`: For asynchronous inference requests (non-blocking, returns job ID).
+- `/check_status/{job_id}`:  To check the status of an asynchronous job.
+- `/cancel/{job_id}`: To cancel a running or queued job.
+
+- **Centralized Request Handling:** The router centralizes the logic for handling different types of API requests, making it easier to manage and extend your API.
+
+- **Abstraction over Modal Functions:** It provides an abstraction layer over direct Modal function calls, offering a more structured and user-friendly API interface.
+
+- **Example Usage (Conceptual):**
+
+  **Synchronous Inference:**
+
+  ```bash
+  curl -X POST <your-modal-app-url>/infer \
+      -H "Content-Type: application/json" \
+      -d '{"prompt_params": {"node_1": {"input_text": "A beautiful landscape"}}}'
+  ```
+
+  **Asynchronous Inference:**
+
+  ```bash
+  curl -X POST <your-modal-app-url>/infer_async \
+      -H "Content-Type: application/json" \
+      -d '{"prompt_params": {"node_1": {"input_text": "A futuristic city"}}}'
+  ```
+
+  This will return a `job_id`.
+
+  **Check Status:**
+
+  ```bash
+  curl <your-modal-app-url>/check_status/{job_id}
+  ```
+
+  **Cancel Job:**
+
+  ```bash
+  curl <your-modal-app-url>/cancel/{job_id}
+  ```
+
+By using this routing convention, you can build a well-organized and easily accessible API for your ComfyUI workflows deployed on Modal.
+
+## Customization
+
+Remember that this repository is a starting point. You will likely need to customize the files to fit your specific ComfyUI workflows and API requirements.
+
+- **`src/workflow.py`:**  This file contains the core Modal application logic, including ComfyUI server launching, workflow execution, and API endpoint definitions.  Modify this to integrate your specific ComfyUI workflow and adjust the API endpoints as needed.
+- **`src/prompt_constructor.py`:**  Implement the logic to construct ComfyUI prompts dynamically based on API request parameters.  Adapt the `PromptConstructor` class to handle the inputs and node mappings for your workflows.
+- **`prompt.json`:**  Define the mapping between API request parameters and ComfyUI node inputs in this JSON file.
+- **`snapshot.json`:**  Add or modify entries in this file to include the custom ComfyUI nodes required by your workflows.
+- **`src/comfy/server.py`, `src/comfy/models.py`, `src/lib/*`:**  These files provide the underlying boilerplate and utility functions. You may need to adjust them in advanced use cases, but for most workflows, customization will primarily focus on `workflow.py`, `prompt_constructor.py`, `prompt.json`, and `snapshot.json`.
+
+## Examples
+
+The `src/examples` folder contains example implementations to further illustrate how to use this repository.  These examples demonstrate specific features and can serve as a practical guide for building your own Modal ComfyUI APIs.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! If you have suggestions, bug reports, or feature requests, please open an issue or submit a pull request.
 
 ## License
 
