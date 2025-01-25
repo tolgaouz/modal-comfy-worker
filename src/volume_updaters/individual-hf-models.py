@@ -22,6 +22,16 @@ models_to_download = [
         "t5xxl_fp8_e4m3fn.safetensors",
         "clip",
     ),
+    (
+        "stabilityai/stable-diffusion-xl-base-1.0",
+        "sd_xl_base_1.0.safetensors",
+        "checkpoints",
+    ),
+    (
+        "stabilityai/stable-diffusion-xl-refiner-1.0",
+        "sd_xl_refiner_1.0.safetensors",
+        "checkpoints",
+    ),
     ("comfyanonymous/flux_text_encoders", "clip_l.safetensors", "clip"),
 ]
 
