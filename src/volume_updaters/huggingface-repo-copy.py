@@ -18,7 +18,7 @@ image = (
 )
 
 app = App(f"{APP_NAME}-update-volume")
-volume = Volume.from_name(VOLUME_NAME)
+volume = Volume.from_name(VOLUME_NAME, create_if_missing=True)
 
 hf_repo_id = "Huggingface/example-repo"  # Repo ID of the models to download, should be based on a huggingface repo
 
