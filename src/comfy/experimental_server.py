@@ -113,6 +113,7 @@ class ExperimentalComfyServer:
             config: Compatibility with regular server (not used)
             preload_models: List of model paths to preload to CPU
         """
+        logger.info("Initializing experimental server")
         self.preload_models = preload_models
         self.initialized = False
         self.model_cache = {}
@@ -122,7 +123,7 @@ class ExperimentalComfyServer:
         self._override_comfy(preload_models)
 
         read_speed, write_speed = check_disk_speed()
-        print(
+        logger.info(
             f"Disk speeds - Read: {read_speed:.2f} MB/s, Write: {write_speed:.2f} MB/s"
         )
 
@@ -185,9 +186,9 @@ class ExperimentalComfyServer:
                 callbacks.on_done and callbacks.on_done(msg)
                 result_future.set_result(result_data)
 
-            def on_ws_message(event: str, msg: dict, sid=None):
-                if event in self.MSG_TYPES_TO_PROCESS and callbacks.on_ws_message:
-                    callbacks.on_ws_message(event, msg, sid)
+            def on_ws_message(event_type: str, msg: dict, sid=None):
+                if event_type in self.MSG_TYPES_TO_PROCESS and callbacks.on_ws_message:
+                    callbacks.on_ws_message(event_type, msg)
 
             # Configure executor callbacks
             self.executor.on_error = on_error
