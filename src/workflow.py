@@ -46,10 +46,14 @@ router = ModalRouter(
 
 @app.function(
     image=image,
-    volumes={"/root/ComfyUI/models": volume},
 )
 @asgi_app()
 def comfy_worker():
+    """
+    This is the Modal function that runs the ASGI app. It is used to start the API server.
+    Make sure to include this in your workflow.
+    You likely don't need to modify this function.
+    """
     return router.asgi_app()
 
 
