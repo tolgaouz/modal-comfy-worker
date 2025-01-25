@@ -58,7 +58,11 @@ This repository is designed to help developers easily deploy ComfyUI workflows a
 
 - After deployment, Modal will provide you with URLs for your API endpoints.
 - **API Endpoints:** Use these endpoints to interact with your ComfyUI workflows programmatically, as described in the "Understanding the Routing" section below.
-- **Interactive UI:** Modal will also provide a separate URL for accessing the ComfyUI interactive user interface. Open this URL in your web browser to access the standard ComfyUI UI. This allows you to:
+
+### **Interactive UI**
+
+- To enable the interactive UI, you must uncomment the lines in `src/workflow.py` that calls the `ui` function.
+- Modal will provide a separate URL for accessing the ComfyUI interactive user interface. Open this URL in your web browser to access the standard ComfyUI UI. This allows you to:
   - Visually design and modify workflows.
   - Manually queue prompts and monitor their progress.
   - Test workflows and experiment with different parameters directly through the UI.
