@@ -118,6 +118,32 @@ Here's a breakdown of the routing concept:
 
 By using this routing convention, you can build a well-organized and easily accessible API for your ComfyUI workflows deployed on Modal.
 
+## Experimental Features
+
+This repository also includes an experimental feature that allows you to run ComfyUI workflows directly in the main thread, potentially reducing inference times and improving error handling.
+
+### Main Thread Execution
+
+The `src/comfy/experimental_server.py` file provides an alternative to the standard ComfyUI server. This experimental server:
+
+- **Runs ComfyUI in the main thread:** This eliminates the overhead of inter-process communication, potentially speeding up inference.
+- **Provides clearer error handling:** Errors are raised directly in the main thread, making debugging easier.
+- **Preloads models to CPU:** It can preload models into CPU memory, leveraging Modal's memory snapshotting feature to reduce cold start times.
+
+### Usage
+
+To use the experimental server, you'll need to:
+
+1. Modify your `workflow.py` to use `ExperimentalComfyServer` instead of `ComfyServer`.
+2. Configure the `preload_models` parameter in the `ExperimentalComfyServer` constructor to specify which models to load into CPU memory.
+3. Ensure that your Modal app is configured to use memory snapshotting.
+
+### Example
+
+The `src/examples/preload_models_with_snapshotting` folder contains an example implementation that demonstrates how to use the experimental server with model preloading and memory snapshotting. This example can serve as a practical guide for integrating this feature into your own workflows.
+
+**Note:** This feature is experimental and may not be suitable for all workflows. It is recommended to test it thoroughly before using it in production.
+
 ## Customization
 
 Remember that this repository is a starting point. You will likely need to customize the files to fit your specific ComfyUI workflows and API requirements.
