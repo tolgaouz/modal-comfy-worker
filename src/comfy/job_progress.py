@@ -9,7 +9,7 @@ class ComfyStatusLog:
         value: Optional[int] = 1,
         max: Optional[int] = 1,
         status: Optional[str] = None,
-        nodes: Optional[List[str]] = None,
+        nodes: Optional[List[str]] = [],
     ):
         self.prompt_id = prompt_id
         self.node = node
@@ -18,8 +18,7 @@ class ComfyStatusLog:
         self.status = status
         self.nodes = nodes
 
-    def from_comfy_message(self, message_data: Dict[str, Any], prompt_id: str):
-        self.prompt_id = prompt_id
+    def from_comfy_message(self, message_data: Dict[str, Any]):
         self.node = message_data.get("node", None)
         self.status = message_data.get("status", None)
         self.max = message_data.get("max", 1)
@@ -38,7 +37,7 @@ class ComfyJobProgress:
         self.last_percentage: float = 0
 
     def remove_cached_nodes_from_total_nodes(self, status_log: ComfyStatusLog):
-        if status_log.nodes:
+        if len(status_log.nodes) > 0:
             self.total_nodes -= set(status_log.nodes)
 
     def add_status_log(self, status_log: ComfyStatusLog):

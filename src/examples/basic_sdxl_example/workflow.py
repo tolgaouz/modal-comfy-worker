@@ -9,11 +9,11 @@ from modal import (
     asgi_app,
     web_server,
 )
-from .comfy.server import ComfyServer, ComfyConfig
-from .lib.image import get_comfy_image
-from .comfy.models import ExecutionCallbacks, ExecutionData
-from .lib.logger import logger
-from .lib.utils import get_time_ms
+from ...comfy.server import ComfyServer, ComfyConfig
+from ...lib.image import get_comfy_image
+from ...comfy.models import ExecutionCallbacks, ExecutionData
+from ...lib.logger import logger
+from ...lib.utils import get_time_ms
 from .prompt_constructor import WorkflowInput, construct_workflow_prompt
 import os
 from fastapi import FastAPI, HTTPException
@@ -29,7 +29,7 @@ image = get_comfy_image(
     github_secret=github_secret,
 )
 
-APP_NAME = "comfy-worker"
+APP_NAME = "comfy-sdxl"
 VOLUME_NAME = f"{APP_NAME}-volume"
 
 app = App(APP_NAME)

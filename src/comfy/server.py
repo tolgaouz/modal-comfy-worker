@@ -191,68 +191,76 @@ class ComfyServer:
                 nonlocal execution_started
 
                 while True:
-                    # Use asyncio.to_thread for the blocking websocket receive
-                    out = await asyncio.to_thread(ws.recv)
-                    if not isinstance(out, str):
-                        continue
+                    try:
+                        # Use asyncio.to_thread for the blocking websocket receive
+                        out = await asyncio.to_thread(ws.recv)
+                        if not isinstance(out, str):
+                            continue
 
-                    message = json.loads(out)
-                    message_type = message.get("type", None)
-                    message_data = message.get("data", {})
-                    msg_prompt_id = message_data.get("prompt_id", None)
+                        message = json.loads(out)
+                        message_type = message.get("type", None)
+                        message_data = message.get("data", {})
+                        msg_prompt_id = message_data.get("prompt_id", None)
 
-                    # Skip irrelevant messages
-                    if (
-                        prompt_id != msg_prompt_id
-                        or message_type not in self.MSG_TYPES_TO_PROCESS
-                        or not comfy_job
-                    ):
-                        continue
+                        # Skip irrelevant messages
+                        if (
+                            prompt_id != msg_prompt_id
+                            or message_type not in self.MSG_TYPES_TO_PROCESS
+                            or not comfy_job
+                        ):
+                            continue
 
-                    if callbacks.on_ws_message:
-                        callbacks.on_ws_message(message_type, message_data)
+                        if callbacks.on_ws_message:
+                            callbacks.on_ws_message(message_type, message_data)
 
-                    # Handle execution errors
-                    if message_type == "execution_error":
-                        if callbacks.on_error:
-                            callbacks.on_error(message.get("data", {}))
-                        raise Exception(
-                            message.get("data", {}).get(
-                                "exception_message",
-                                "Unknown Exception while executing the workflow",
+                        # Handle execution errors
+                        if message_type == "execution_error":
+                            if callbacks.on_error:
+                                callbacks.on_error(message.get("data", {}))
+                            raise Exception(
+                                message.get("data", {}).get(
+                                    "exception_message",
+                                    "Unknown Exception while executing the workflow",
+                                )
+                            )
+
+                        # Update job status
+                        comfy_job.add_status_log(
+                            ComfyStatusLog(msg_prompt_id).from_comfy_message(
+                                message_data
                             )
                         )
 
-                    # Update job status
-                    comfy_job.addStatusLog(
-                        ComfyStatusLog.from_comfy_message(message_data, prompt_id)
-                    )
+                        # Handle execution progress
+                        if message["type"] == "executing":
+                            # Trigger start callback on first execution message
+                            if not execution_started and callbacks.on_start:
+                                callbacks.on_start({"process_id": data.process_id})
+                                execution_started = True
 
-                    # Handle execution progress
-                    if message["type"] == "executing":
-                        # Trigger start callback on first execution message
-                        if not execution_started and callbacks.on_start:
-                            callbacks.on_start({"process_id": data.process_id})
-                            execution_started = True
-
-                        if callbacks.on_progress:
-                            callbacks.on_progress(
-                                "progress",
-                                {"progress": comfy_job.getPercentage()},
-                                None,
-                            )
-
-                        # Check for completion
-                        if message_data["node"] is None:
-                            if callbacks.on_done:
-                                callbacks.on_done({"process_id": data.process_id})
-                            result_future.set_result(
-                                ExecutionResult(
-                                    prompt_id=prompt_id,
-                                    queue_duration=comfy_queue_duration,
+                            if callbacks.on_progress:
+                                callbacks.on_progress(
+                                    "progress",
+                                    {"progress": comfy_job.getPercentage()},
+                                    None,
                                 )
-                            )
-                            break
+
+                            # Check for completion
+                            if message_data["node"] is None:
+                                if callbacks.on_done:
+                                    callbacks.on_done({"process_id": data.process_id})
+                                result_future.set_result(
+                                    ExecutionResult(
+                                        prompt_id=prompt_id,
+                                        queue_duration=comfy_queue_duration,
+                                    )
+                                )
+                                break
+                    except Exception as e:
+                        logger.error(f"Error in monitor_ws: {e}")
+                        if not result_future.done():
+                            result_future.set_exception(e)
+                        break
 
             # Start monitoring task and wait for result with timeout
             monitor_task = asyncio.create_task(monitor_ws())

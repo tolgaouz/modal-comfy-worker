@@ -1,19 +1,9 @@
-from modal import (
-    Secret,
-    enter,
-    App,
-    Volume,
-    method,
-    exception,
-    functions,
-    asgi_app,
-    web_server,
-)
-from .comfy.server import ComfyServer, ComfyConfig
-from .lib.image import get_comfy_image
-from .comfy.models import ExecutionCallbacks, ExecutionData
-from .lib.logger import logger
-from .lib.utils import get_time_ms
+from modal import Secret, enter, App, Volume, method, exception, functions, asgi_app
+from ...comfy.experimental_server import ExperimentalComfyServer
+from ...lib.image import get_comfy_image
+from ...comfy.models import ExecutionCallbacks, ExecutionData
+from ...lib.logger import logger
+from ...lib.utils import get_time_ms
 from .prompt_constructor import WorkflowInput, construct_workflow_prompt
 import os
 from fastapi import FastAPI, HTTPException
@@ -29,7 +19,7 @@ image = get_comfy_image(
     github_secret=github_secret,
 )
 
-APP_NAME = "comfy-worker"
+APP_NAME = "comfy-preload-models-sdxl"
 VOLUME_NAME = f"{APP_NAME}-volume"
 
 app = App(APP_NAME)
@@ -49,14 +39,18 @@ volume = Volume.from_name(VOLUME_NAME, create_if_missing=True)
     container_idle_timeout=60,
     # keep_warm=1,
     retries=1,
+    enable_memory_snapshot=True,
 )
 class ComfyWorkflow:
-    @enter()
+    @enter(snap=True)
     def run_this_on_container_startup(self):
         self.web_app = FastAPI()
-        self.server = ComfyServer()
-        self.server.start()
-        self.server.wait_until_ready()
+        self.server = ExperimentalComfyServer(
+            preload_models=[
+                "/root/ComfyUI/models/checkpoints/sd_xl_refiner_1.0.safetensors",
+                "/root/ComfyUI/models/checkpoints/sd_xl_base_1.0.safetensors",
+            ]
+        )
 
     @method()
     async def infer(self, payload: WorkflowInput):
@@ -73,7 +67,6 @@ class ComfyWorkflow:
                 ),
                 on_ws_message=lambda type, msg: (
                     logger.info(f"Received message: {type} - {msg}"),
-                    print(f"Received message: {type} - {msg}"),
                 ),
                 on_start=lambda msg: (
                     logger.info(
@@ -86,8 +79,6 @@ class ComfyWorkflow:
             execution_result = await self.server.execute(
                 data=ExecutionData(prompt=prompt, process_id="123"), callbacks=callbacks
             )
-
-            print("execution result", execution_result)
 
             return execution_result
         except Exception as e:
@@ -143,20 +134,3 @@ async def cancel(call_id: str):
 @asgi_app()
 def asgi_app():
     return web_app
-
-
-@app.function(
-    allow_concurrent_inputs=10,
-    concurrency_limit=1,
-    image=image,
-    volumes={"/root/ComfyUI/models": volume},
-    container_idle_timeout=30,
-    timeout=1800,
-    gpu="l4",
-)
-@web_server(8188, startup_timeout=120)
-def ui():
-    logger.info("Starting UI")
-    config = ComfyConfig(SERVER_HOST="0.0.0.0", SERVER_PORT=8188)
-    server = ComfyServer(config=config)
-    server.start()
