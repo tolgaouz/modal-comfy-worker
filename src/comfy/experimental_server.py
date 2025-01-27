@@ -12,6 +12,7 @@ Limitations:
 So make sure you set allow_concurrent_inputs to 1 in your modal app.
 """
 
+import time
 from .models import ExecutionData, ExecutionCallbacks
 from ..lib.utils import check_disk_speed
 from typing import Dict, List, Optional, Callable
@@ -145,11 +146,13 @@ class ExperimentalComfyServer:
 
             # Initialize executor and components
             self.executor = CustomPromptExecutor()
+            start_time = time.time() * 1000
             nodes.init_extra_nodes()
+            init_time = time.time() * 1000 - start_time
+            logger.info(f"Node initialization took {init_time:.2f} ms")
 
             # Patch model loading and logging
             self._patch_model_loading(comfy.utils)
-            self._patch_logging([nodes, comfy.sd, comfy.utils])
 
             self.initialized = True
 
@@ -195,11 +198,14 @@ class ExperimentalComfyServer:
             self.executor.on_done = on_done
             self.executor.server.on_send_sync = on_ws_message
 
+            start_time = time.time()
             is_valid, error, outputs_to_execute, node_errors = (
                 execution.validate_prompt(
                     data.prompt,
                 )
             )
+            validate_time = time.time() - start_time
+            logger.info(f"Validation took {validate_time:.2f} seconds")
 
             if not is_valid:
                 raise Exception(error)
@@ -229,15 +235,11 @@ class ExperimentalComfyServer:
             filename = os.path.basename(path)
             for model_key, state_dict in self.model_cache.items():
                 if filename in str(model_key):
+                    logger.info(f"Using cached model {model_key}")
                     return state_dict
             return original_load(path, *args, **kwargs)
 
         comfy_utils.load_torch_file = cached_load
-
-    def _patch_logging(self, modules):
-        """Patch ComfyUI modules to use Python standard logging"""
-        for module in modules:
-            module.logging = logger
 
     def _override_comfy(self, preload_models: List[str] = []):
         import sys

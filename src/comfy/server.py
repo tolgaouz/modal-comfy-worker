@@ -91,7 +91,7 @@ class ComfyServer:
         """
         try:
             if self.process is not None:
-                logger.debug("ComfyUI server already running, skipping start")
+                logger.info("ComfyUI server already running, skipping start")
                 return
 
             command = self._build_command()
