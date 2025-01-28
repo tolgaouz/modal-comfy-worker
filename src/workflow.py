@@ -114,7 +114,7 @@ async def infer(payload: WorkflowInput):
 @web_app.post("/infer_async")
 async def infer_async(payload: WorkflowInput):
     try:
-        call = await ComfyWorkflow().infer.spawn(payload)
+        call = ComfyWorkflow().infer.spawn(payload)
         return {"call_id": call.object_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
