@@ -16,7 +16,6 @@ import time
 from .models import ExecutionData, ExecutionCallbacks
 from ..lib.utils import check_disk_speed
 from typing import Dict, List, Optional, Callable
-import torch
 import os
 import asyncio
 from ..lib.logger import logger
@@ -140,16 +139,7 @@ class ExperimentalComfyServer:
         """Initialize GPU-related components and override model loading"""
         if not self.initialized:
             # Import ComfyUI components after CUDA setup
-            import comfy.sd
             import comfy.utils
-            import nodes
-
-            # Initialize executor and components
-            self.executor = CustomPromptExecutor()
-            start_time = time.time() * 1000
-            nodes.init_extra_nodes()
-            init_time = time.time() * 1000 - start_time
-            logger.info(f"Node initialization took {init_time:.2f} ms")
 
             # Patch model loading and logging
             self._patch_model_loading(comfy.utils)
@@ -160,6 +150,7 @@ class ExperimentalComfyServer:
         self, data: ExecutionData, callbacks: ExecutionCallbacks = ExecutionCallbacks()
     ):
         import execution
+        import torch
 
         """Execute a workflow directly in the main thread.
 
@@ -251,6 +242,15 @@ class ExperimentalComfyServer:
         import sys
 
         sys.path.append("/root/ComfyUI")
+
+        import nodes
+
+        # Initialize executor and components
+        self.executor = CustomPromptExecutor()
+        start_time = time.time() * 1000
+        nodes.init_extra_nodes()
+        init_time = time.time() * 1000 - start_time
+        logger.info(f"Node initialization took {init_time:.2f} ms")
 
         # Initialize custom nodes
         self._preload_models_to_cpu(preload_models)

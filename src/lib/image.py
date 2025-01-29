@@ -8,7 +8,8 @@ base_image = (
     .apt_install("git", "wget")
     .pip_install(
         "websocket-client",
-        "pydantic",
+        "fastapi>=0.100.0",
+        "pydantic>=2.0.0",
         "cupy-cuda12x",
         "requests",
         "huggingface_hub[hf_transfer]==0.26.2",
