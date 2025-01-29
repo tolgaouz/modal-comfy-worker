@@ -60,7 +60,6 @@ class ComfyWorkflow:
 
     @method()
     async def infer(self, payload: WorkflowInput):
-        server_ws_connection = None
         job_start_time = get_time_ms()
         prompt = construct_workflow_prompt(payload)
 
@@ -93,9 +92,6 @@ class ComfyWorkflow:
         except Exception as e:
             logger.error(f"Error in execution: {str(e)}")
             raise e
-        finally:
-            if server_ws_connection:
-                server_ws_connection.close()
 
 
 web_app = FastAPI()
