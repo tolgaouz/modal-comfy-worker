@@ -106,6 +106,27 @@ class ExperimentalComfyServer:
         "completed",
     ]
 
+    from contextlib import contextmanager
+
+    @contextmanager
+    def force_cpu_during_snapshot(self):
+        import torch
+
+        """Monkeypatch Torch CUDA checks during model loading/snapshotting"""
+        original_is_available = torch.cuda.is_available
+        original_current_device = torch.cuda.current_device
+
+        # Force Torch to report no CUDA devices
+        torch.cuda.is_available = lambda: False
+        torch.cuda.current_device = lambda: torch.device("cpu")
+
+        try:
+            yield
+        finally:
+            # Restore original implementations
+            torch.cuda.is_available = original_is_available
+            torch.cuda.current_device = original_current_device
+
     def __init__(self, config=None, preload_models: List[str] = []):
         """Initialize experimental server.
 
@@ -113,19 +134,20 @@ class ExperimentalComfyServer:
             config: Compatibility with regular server (not used)
             preload_models: List of model paths to preload to CPU
         """
-        logger.info("Initializing experimental server")
-        self.preload_models = preload_models
-        self.initialized = False
-        self.model_cache = {}
-        self.executor = None
+        with self.force_cpu_during_snapshot():
+            logger.info("Initializing experimental server")
+            self.preload_models = preload_models
+            self.initialized = False
+            self.model_cache = {}
+            self.executor = None
 
-        # Set up ComfyUI environment overrides
-        self._override_comfy(preload_models)
+            # Set up ComfyUI environment overrides
+            self._override_comfy(preload_models)
 
-        read_speed, write_speed = check_disk_speed()
-        logger.info(
-            f"Disk speeds - Read: {read_speed:.2f} MB/s, Write: {write_speed:.2f} MB/s"
-        )
+            read_speed, write_speed = check_disk_speed()
+            logger.info(
+                f"Disk speeds - Read: {read_speed:.2f} MB/s, Write: {write_speed:.2f} MB/s"
+            )
 
     def start(self):
         """Compatibility method - initialization happens in constructor"""
@@ -237,9 +259,6 @@ class ExperimentalComfyServer:
 
         # Force immediate flush for streaming logs
         sys.stdout.reconfigure(line_buffering=True)
-
-        """Initialize ComfyUI environment"""
-        import sys
 
         sys.path.append("/root/ComfyUI")
 
