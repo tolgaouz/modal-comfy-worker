@@ -61,8 +61,10 @@ class ComfyWorkflow:
         self.web_app = FastAPI()
         self.server = ExperimentalComfyServer(
             preload_models=[
-                "/root/ComfyUI/models/checkpoints/sd_xl_refiner_1.0.safetensors",
-                "/root/ComfyUI/models/checkpoints/sd_xl_base_1.0.safetensors",
+                # You can optionally preload diffusion models to CPU memory.
+                # This is meant to reduce the inference time on containers with slow disk reads.
+                # "/root/ComfyUI/models/checkpoints/sd_xl_refiner_1.0.safetensors",
+                # "/root/ComfyUI/models/checkpoints/sd_xl_base_1.0.safetensors",
             ]
         )
 

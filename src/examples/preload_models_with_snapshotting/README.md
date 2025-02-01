@@ -1,8 +1,10 @@
 # Preload Models with Snapshotting - SDXL Workflow
 
-This example demonstrates how to preload models to CPU memory and use modal's memory snapshotting to cut down on the cold start times.
+This example demonstrates how to preload custom nodes to CPU memory and use modal's memory snapshotting to cut down on the cold start times.
+
+You can also preload diffusion models to CPU memory. This is helpful when the container has slow disk reads and you want to speed up the inference times.
+
 It uses the `experimental_server.py` file to override the ComfyUI server to run in the main thread.
-For now, this implementation uses a custom @app.cls decorator to set up router and inference methods until i figure out how to do it with the existing architecture.
 
 ## How to run locally
 
