@@ -61,7 +61,7 @@ This repository is designed to help developers easily deploy ComfyUI workflows a
 
 ### **Interactive UI**
 
-- To enable the interactive UI, you must uncomment the lines in `src/workflow.py` that calls the `ui` function.
+- To enable the interactive UI, you must uncomment the lines in `workflow.py` that calls the `ui` function.
 - Modal will provide a separate URL for accessing the ComfyUI interactive user interface. Open this URL in your web browser to access the standard ComfyUI UI. This allows you to:
   - Visually design and modify workflows.
   - Manually queue prompts and monitor their progress.
@@ -124,7 +124,7 @@ This repository also includes an experimental feature that allows you to run Com
 
 ### Main Thread Execution
 
-The `src/comfy/experimental_server.py` file provides an alternative to the standard ComfyUI server. This experimental server:
+The [`comfy/experimental_server.py`](./comfy/experimental_server.py) file provides an alternative to the standard ComfyUI server. This experimental server:
 
 - **Runs ComfyUI in the main thread:** This eliminates the overhead of inter-process communication, potentially speeding up inference.
 - **Provides clearer error handling:** Errors are raised directly in the main thread, making debugging easier.
@@ -140,7 +140,7 @@ To use the experimental server, you'll need to:
 
 ### Example
 
-The `src/examples/preload_models_with_snapshotting` folder contains an example implementation that demonstrates how to use the experimental server with model preloading and memory snapshotting. This example can serve as a practical guide for integrating this feature into your own workflows.
+The [`examples/preload_models_with_snapshotting`](./examples/preload_models_with_snapshotting) folder contains an example implementation that demonstrates how to use the experimental server with model preloading and memory snapshotting. This example can serve as a practical guide for integrating this feature into your own workflows.
 
 **Note:** This feature is experimental and may not be suitable for all workflows. It is recommended to test it thoroughly before using it in production.
 
@@ -148,15 +148,15 @@ The `src/examples/preload_models_with_snapshotting` folder contains an example i
 
 Remember that this repository is a starting point. You will likely need to customize the files to fit your specific ComfyUI workflows and API requirements.
 
-- **`src/workflow.py`:** This file serves as the entry point for the Modal app. It defines the API routes, the ComfyUI server, and the main logic for your application.
-- **`src/prompt_constructor.py`:** Implement the logic to construct ComfyUI prompts dynamically based on API request parameters.
+- **`workflow.py`:** This file serves as the entry point for the Modal app. It defines the API routes, the ComfyUI server, and the main logic for your application.
+- **`prompt_constructor.py`:** Implement the logic to construct ComfyUI prompts dynamically based on API request parameters.
 - **`prompt.json`:** Your ComfyUI workflow (exported via the API mode).
 - **`snapshot.json`:** Add or modify entries in this file to include the custom ComfyUI nodes required by your workflows.
-- **`src/comfy/server.py`, `src/comfy/models.py`, `src/lib/*`:** These files provide the underlying boilerplate and utility functions. You may need to adjust them in advanced use cases, but for most workflows, customization will primarily focus on `workflow.py`, `prompt_constructor.py`, `prompt.json`, and `snapshot.json`.
+- **`comfy/*`, `lib/*`:** These files provide the underlying boilerplate and utility functions. You may need to adjust them in advanced use cases, but for most workflows, customization will primarily focus on `workflow.py`, `prompt_constructor.py`, `prompt.json`, and `snapshot.json`.
 
 ## Examples
 
-The `src/examples` folder contains example implementations to further illustrate how to use this repository. These examples demonstrate specific features and can serve as a practical guide for building your own Modal ComfyUI APIs.
+The [`examples`](./examples) folder contains example implementations to further illustrate how to use this repository. These examples demonstrate specific features and can serve as a practical guide for building your own Modal ComfyUI APIs.
 
 ## Contributing
 
