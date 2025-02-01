@@ -51,7 +51,7 @@ This repository is designed to help developers easily deploy ComfyUI workflows a
 ### **Deploy your Modal app:**
 
   ```bash
-  modal deploy src.workflow
+  modal deploy workflow
   ```
 
 ### **Access your API endpoints:**

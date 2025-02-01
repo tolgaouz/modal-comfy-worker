@@ -10,5 +10,5 @@ It uses the `experimental_server.py` file to override the ComfyUI server to run 
 
 - Move the files to the root of the repo, under `src/`.
 - Fix the imports in `workflow.py` so that they point to the correct files.
-- Run `modal run src.update_volume` to update the volume with the needed models.
-- Run `modal serve src.workflow` to serve the app locally.
+- Run `modal run update_volume` to update the volume with the needed models.
+- Run `modal serve workflow` to serve the app locally.
