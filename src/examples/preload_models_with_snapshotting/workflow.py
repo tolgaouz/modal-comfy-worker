@@ -13,10 +13,24 @@ local_prompt_path = os.path.join(os.path.dirname(__file__), "prompt.json")
 
 github_secret = Secret.from_name("github-secret")
 
-image = get_comfy_image(
-    local_snapshot_path=local_snapshot_path,
-    local_prompt_path=local_prompt_path,
-    github_secret=github_secret,
+image = (
+    get_comfy_image(
+        local_snapshot_path=local_snapshot_path,
+        local_prompt_path=local_prompt_path,
+        github_secret=github_secret,
+    )
+    # Some custom nodes will require OpenGL support, so we need to install the dependencies
+    .apt_install(
+        "libgl1",
+        "libglx0",
+        "libgles2",
+        "libegl1",
+        "libxrender1",
+        "libxext6",
+        "libglib2.0-0",
+        "python3-opengl",
+    )
+    .pip_install("PyOpenGL", "PyOpenGL-accelerate")
 )
 
 APP_NAME = "comfy-preload-models-sdxl"
