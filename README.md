@@ -128,7 +128,7 @@ The `src/comfy/experimental_server.py` file provides an alternative to the stand
 
 - **Runs ComfyUI in the main thread:** This eliminates the overhead of inter-process communication, potentially speeding up inference.
 - **Provides clearer error handling:** Errors are raised directly in the main thread, making debugging easier.
-- **Preloads models to CPU:** It can preload models into CPU memory, leveraging Modal's memory snapshotting feature to reduce cold start times.
+- **Preloads custom nodes and models to CPU:** It can preload models and custom nodes into CPU memory, leveraging Modal's memory snapshotting feature to reduce cold start times.
 
 ### Usage
 
