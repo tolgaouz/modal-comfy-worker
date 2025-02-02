@@ -35,12 +35,6 @@ This repository is designed to help developers easily deploy ComfyUI workflows a
   cd <repository-name>
   ```
 
-### **Install dependencies:**
-
-  ```bash
-  pip install -r requirements.txt
-  ```
-
 ### **Configure your Modal app:**
 
 - Ensure you have a Modal account and the Modal CLI installed and configured.
@@ -51,7 +45,7 @@ This repository is designed to help developers easily deploy ComfyUI workflows a
 ### **Deploy your Modal app:**
 
   ```bash
-  modal deploy workflow
+  uv run modal deploy workflow
   ```
 
 ### **Access your API endpoints:**
