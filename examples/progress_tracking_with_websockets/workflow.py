@@ -68,7 +68,7 @@ class ComfyWorkflow:
                 logger.info(
                     f"Connected to Server. Time to connect: {server_connection_time} ms"
                 )
-        except Exception as e:
+        except Exception:
             raise WebSocketError(
                 "Failed to establish websocket connection to server: {e}"
             )

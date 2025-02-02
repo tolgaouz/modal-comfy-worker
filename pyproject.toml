@@ -1,0 +1,14 @@
+[project]
+name = "modal-comfy-worker"
+version = "0.1.0"
+description = "A template for deploying ComfyUI workflows as robust and scalable APIs using Modal"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "asyncio>=3.4.3",
+    "modal>=0.73.7",
+    "pydantic>=2.10.6",
+    "ruff>=0.9.4",
+    "torch>=2.6.0",
+    "websocket-client>=1.8.0",
+]

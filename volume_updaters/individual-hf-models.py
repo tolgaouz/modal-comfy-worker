@@ -4,7 +4,7 @@ This is a modal function that downloads a list of models from huggingface and co
 The volume is then used as the /models directory in your ComfyUI container.
 """
 
-from modal import Secret, App, Volume
+from modal import App, Volume
 from ..workflow import APP_NAME, VOLUME_NAME, image
 
 app = App(f"{APP_NAME}-update-volume")

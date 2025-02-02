@@ -224,8 +224,9 @@ class ExperimentalComfyServer:
                 raise Exception(error)
 
             # Execute workflow with CUDA optimizations
-            with torch.inference_mode(), torch.autocast(
-                device_type="cuda", enabled=False
+            with (
+                torch.inference_mode(),
+                torch.autocast(device_type="cuda", enabled=False),
             ):
                 self.executor.execute(
                     prompt=data.prompt,
@@ -278,7 +279,7 @@ class ExperimentalComfyServer:
         """
         TODO: This method will be used to mimic extra_model_paths functionality in ComfyUI.
         """
-        import folder_paths
+        import folder_paths  # noqa: F401
 
         pass
 
