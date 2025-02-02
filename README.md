@@ -163,5 +163,7 @@ This project is open-sourced under the MIT License - see the [LICENSE](LICENSE) 
 ## TODO
 
 - [ ] Add a way to run the ComfyUI interactive server with ComfyUI-Mananager properly working.
-- [ ] Add streaming output examples
-- [ ] Add model file caching to the container start-up functions to use Modal's snapshot caching.
+- [ ] Add streaming output examples.
+- [ ] Support `extra_model_paths.yaml` for model loading
+- [ ] Fix progress tracking for workflows that bypass nodes based on runtime conditions.
+- [ ] Support git repos for custom nodes that have submodules without `recursive` flag.
