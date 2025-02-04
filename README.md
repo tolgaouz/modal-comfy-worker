@@ -83,9 +83,9 @@ Here's a breakdown of the routing concept:
   **Synchronous Inference:**
 
   ```bash
-  curl -X POST <your-modal-app-url>/infer \
+  curl -X POST <your-modal-app-url>/infer_sync \
       -H "Content-Type: application/json" \
-      -d '{"prompt_params": {"node_1": {"input_text": "A beautiful landscape"}}}'
+      -d '{"prompt": "A beautiful landscape"}'
   ```
 
   **Asynchronous Inference:**
@@ -93,7 +93,7 @@ Here's a breakdown of the routing concept:
   ```bash
   curl -X POST <your-modal-app-url>/infer_async \
       -H "Content-Type: application/json" \
-      -d '{"prompt_params": {"node_1": {"input_text": "A futuristic city"}}}'
+      -d '{"prompt": "A beautiful landscape"}'
   ```
 
   This will return a `job_id`.
