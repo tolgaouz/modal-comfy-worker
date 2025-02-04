@@ -9,6 +9,7 @@ dependencies = [
     "modal>=0.73.7",
     "pre-commit>=4.1.0",
     "pydantic>=2.10.6",
+    "requests>=2.32.3",
     "ruff>=0.9.4",
     "torch>=2.6.0",
     "websocket-client>=1.8.0",

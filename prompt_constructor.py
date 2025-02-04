@@ -1,7 +1,7 @@
 import json
 import copy
 from pydantic import BaseModel
-from .lib.prompt_helpers import assign_values_if_path_exists
+from lib.prompt_helpers import assign_values_if_path_exists
 
 
 class WorkflowInput(BaseModel):

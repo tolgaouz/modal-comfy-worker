@@ -4,15 +4,14 @@ import logging
 import requests
 import threading
 from .config import ComfyConfig
-from ..lib.utils import get_time_ms
-from ..lib.exceptions import ServerStartupError
-from .models import ExecutionResult, QueuePromptData
+from lib.utils import get_time_ms
+from lib.exceptions import ServerStartupError
+from lib.exceptions import ExecutionError
+from .models import ExecutionResult, QueuePromptData, ExecutionData, ExecutionCallbacks
 import json
 import asyncio
 import websocket
-from .models import ExecutionData, ExecutionCallbacks
 from .job_progress import ComfyJobProgress, ComfyStatusLog
-from ..lib.exceptions import ExecutionError
 
 logger = logging.getLogger(__name__)
 

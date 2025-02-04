@@ -4,7 +4,7 @@ import shutil
 import subprocess
 from zipfile import ZipFile
 from typing import Dict
-from ..lib.logger import logger
+from lib.logger import logger
 import requests
 from .server import ComfyServer
 from .config import ComfyConfig

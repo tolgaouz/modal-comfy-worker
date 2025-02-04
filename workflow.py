@@ -9,12 +9,12 @@ from modal import (
     asgi_app,
     web_server,
 )
-from .comfy.server import ComfyServer, ComfyConfig
-from .lib.image import get_comfy_image
-from .comfy.models import ExecutionCallbacks, ExecutionData
-from .lib.logger import logger
-from .lib.utils import get_time_ms
-from .prompt_constructor import WorkflowInput, construct_workflow_prompt
+from comfy.server import ComfyServer, ComfyConfig
+from comfy.models import ExecutionCallbacks, ExecutionData
+from lib.image import get_comfy_image
+from lib.logger import logger
+from lib.utils import get_time_ms
+from prompt_constructor import WorkflowInput, construct_workflow_prompt
 import os
 from fastapi import FastAPI, HTTPException
 
