@@ -30,10 +30,9 @@ image = get_comfy_image(
 )
 
 APP_NAME = "comfy-worker"
-VOLUME_NAME = f"{APP_NAME}-volume"
 
 app = App(APP_NAME)
-volume = Volume.from_name(VOLUME_NAME, create_if_missing=True)
+volume = Volume.from_name("hf-hub-cache", create_if_missing=True)
 
 
 @app.cls(
@@ -41,7 +40,7 @@ volume = Volume.from_name(VOLUME_NAME, create_if_missing=True)
     # Add in your secrets
     secrets=[],
     # Add in your volumes
-    volumes={"/root/ComfyUI/models": volume},
+    volumes={"/cache": volume},
     gpu="l4",
     # allow_concurrent_inputs=3,
     # concurrency_limit=10,
@@ -149,7 +148,7 @@ def asgi_app():
     allow_concurrent_inputs=10,
     concurrency_limit=1,
     image=image,
-    volumes={"/root/ComfyUI/models": volume},
+    volumes={"/cache": volume},
     container_idle_timeout=30,
     timeout=1800,
     gpu="l4",
