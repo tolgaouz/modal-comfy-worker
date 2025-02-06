@@ -1,6 +1,5 @@
 from modal import Image, Secret, Volume
-from typing import Optional
-
+from typing import Optional, Callable
 from comfy.download_comfy import download_comfy
 
 base_image = (
@@ -36,31 +35,13 @@ base_image = (
     )
 )
 
-def hf_download():
-    from huggingface_hub import hf_hub_download
-    import subprocess
-
-    flux_model = hf_hub_download(
-        repo_id="Comfy-Org/flux1-schnell",
-        filename="flux1-schnell-fp8.safetensors",
-        cache_dir="/cache",
-    )
-
-    # # symlink the model to the right ComfyUI directory
-    subprocess.run(
-        f"ln -s {flux_model} /root/ComfyUI/models/checkpoints/flux1-schnell-fp8.safetensors",
-        shell=True,
-        check=True,
-    )
-
-
-vol = Volume.from_name("hf-hub-cache", create_if_missing=True)
-
 
 def get_comfy_image(
     local_snapshot_path: str,
     local_prompt_path: str,
     github_secret: Optional[Secret] = None,
+    volume: Optional[Volume] = None,
+    volume_updater: Optional[Callable] = None,
 ) -> Image:
     """
     Prepares a container image with ComfyUI setup and standardized file paths.
@@ -82,10 +63,9 @@ def get_comfy_image(
         .run_function(
             download_comfy, args=["/root/snapshot.json"], secrets=[github_secret]
         )
-        .run_function(
-            hf_download,
-            # persist the HF cache to a Modal Volume so future runs don't re-download models
-            volumes={"/cache": vol},
-        )
         .add_local_file(local_prompt_path, "/root/prompt.json", copy=True)
+        .run_commands(["rm -rf /root/ComfyUI/models"])
+        .run_function(volume_updater, volumes={"/volume": volume})
+        if volume_updater
+        else None
     )

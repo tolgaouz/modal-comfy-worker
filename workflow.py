@@ -17,22 +17,57 @@ from lib.utils import get_time_ms
 from prompt_constructor import WorkflowInput, construct_workflow_prompt
 import os
 from fastapi import FastAPI, HTTPException
+from volume_updaters.individual_hf_models import HfModelsVolumeUpdater
+
+APP_NAME = "comfy-worker"
+VOLUME_NAME = f"{APP_NAME}-volume"
+
+app = App(APP_NAME)
+volume = Volume.from_name(VOLUME_NAME, create_if_missing=True)
 
 local_snapshot_path = os.path.join(os.path.dirname(__file__), "snapshot.json")
 local_prompt_path = os.path.join(os.path.dirname(__file__), "prompt.json")
 
 github_secret = Secret.from_name("github-secret")
 
+
+models_to_download = [
+    # format is (huggingface repo_id, the model filename, comfyui models subdirectory we want to save the model in)
+    (
+        "Comfy-Org/flux1-dev",
+        "flux1-dev-fp8.safetensors",
+        "checkpoints",
+    ),
+    (
+        "comfyanonymous/flux_text_encoders",
+        "t5xxl_fp8_e4m3fn.safetensors",
+        "clip",
+    ),
+    (
+        "stabilityai/stable-diffusion-xl-base-1.0",
+        "sd_xl_base_1.0.safetensors",
+        "checkpoints",
+    ),
+    (
+        "stabilityai/stable-diffusion-xl-refiner-1.0",
+        "sd_xl_refiner_1.0.safetensors",
+        "checkpoints",
+    ),
+    ("comfyanonymous/flux_text_encoders", "clip_l.safetensors", "clip"),
+]
+
+
+async def volume_updater():
+    await HfModelsVolumeUpdater(models_to_download).update_volume()
+
+
 image = get_comfy_image(
     local_snapshot_path=local_snapshot_path,
     local_prompt_path=local_prompt_path,
     github_secret=github_secret,
+    volume_updater=volume_updater,
+    volume=volume,
 )
-
-APP_NAME = "comfy-worker"
-
-app = App(APP_NAME)
-volume = Volume.from_name("hf-hub-cache", create_if_missing=True)
 
 
 @app.cls(
@@ -40,7 +75,7 @@ volume = Volume.from_name("hf-hub-cache", create_if_missing=True)
     # Add in your secrets
     secrets=[],
     # Add in your volumes
-    volumes={"/cache": volume},
+    volumes={"/root/ComfyUI/models": volume},
     gpu="l4",
     # allow_concurrent_inputs=3,
     # concurrency_limit=10,
@@ -148,7 +183,7 @@ def asgi_app():
     allow_concurrent_inputs=10,
     concurrency_limit=1,
     image=image,
-    volumes={"/cache": volume},
+    volumes={"/root/ComfyUI/models": volume},
     container_idle_timeout=30,
     timeout=1800,
     gpu="l4",
