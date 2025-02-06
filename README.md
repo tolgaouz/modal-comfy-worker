@@ -23,7 +23,23 @@ This repository is designed to help developers easily deploy ComfyUI workflows a
 - **Standard API Routing:** The `workflow.py` file includes a standard way to manage API endpoints for inference, status checks, and job management. This is not provided by default by Modal and adds significant value for building production APIs.
 - **Dynamic Prompt Generation:** Easily map API request parameters to ComfyUI workflow inputs using `prompt.json` and `prompt_constructor.py`, making your APIs flexible and user-friendly. The `prompt_constructor.py` file is where you'll implement the logic to transform API requests into ComfyUI prompts.
 - **Interactive UI Server:** Alongside the API endpoints, you can also access the standard ComfyUI web interface, allowing for visual workflow editing, manual prompting, and real-time feedback.
-- **Optimized Model Management:** `volume_updaters` ensure efficient model loading and reduce Docker image size by downloading models to volumes on demand. This allows you to manage large model files separately from your application code.
+- **Optimized Model Management:** `volume_updaters` ensure efficient model loading and reduce Docker image size by downloading models to volumes on demand. This allows you to manage large model files separately from your application code. This is automatically done in the image build process. Check [workflow.py](./workflow.py) for more details.
+
+```python
+async def volume_updater():
+    # HfModelsVolumeUpdater is a volume updater that downloads a snapshot of a huggingface repo and copies it to a volume. It's a good starting point. You can also implement your own volume updater by implementing the `VolumeUpdater` class.
+    # Check the implementation of HfModelsVolumeUpdater in volume_updaters/individual_hf_models.py for more details.
+    await HfModelsVolumeUpdater(models_to_download).update_volume()
+
+image = get_comfy_image(
+    local_snapshot_path=local_snapshot_path,
+    local_prompt_path=local_prompt_path,
+    github_secret=github_secret,
+    volume_updater=volume_updater,
+    volume=volume,
+)
+```
+
 - **Customizable and Extensible:** The repository is designed to be a starting point. You are expected to adapt and modify the provided files (especially `workflow.py` and `prompt_constructor.py`) to match the specific needs of your ComfyUI workflows. The example implementations in the `examples` folder serve as further guidance.
 
 ## Getting Started
@@ -31,8 +47,8 @@ This repository is designed to help developers easily deploy ComfyUI workflows a
 ### **Clone the repository:**
 
   ```bash
-  git clone <repository-url>
-  cd <repository-name>
+  git clone https://github.com/tolgaouz/modal-comfy-worker.git
+  cd modal-comfy-worker
   ```
 
 ### **Configure your Modal app:**
