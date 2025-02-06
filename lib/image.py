@@ -1,6 +1,5 @@
-from modal import Image, Secret
-from typing import Optional
-
+from modal import Image, Secret, Volume
+from typing import Optional, Callable
 from comfy.download_comfy import download_comfy
 
 base_image = (
@@ -41,6 +40,8 @@ def get_comfy_image(
     local_snapshot_path: str,
     local_prompt_path: str,
     github_secret: Optional[Secret] = None,
+    volume: Optional[Volume] = None,
+    volume_updater: Optional[Callable] = None,
 ) -> Image:
     """
     Prepares a container image with ComfyUI setup and standardized file paths.
@@ -62,6 +63,9 @@ def get_comfy_image(
         .run_function(
             download_comfy, args=["/root/snapshot.json"], secrets=[github_secret]
         )
-        .run_commands(["rm -rf /root/ComfyUI/models"])
         .add_local_file(local_prompt_path, "/root/prompt.json", copy=True)
+        .run_commands(["rm -rf /root/ComfyUI/models"])
+        .run_function(volume_updater, volumes={"/volume": volume})
+        if volume_updater
+        else None
     )
