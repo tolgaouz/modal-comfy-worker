@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Dict
+from typing import Optional, Callable, Dict, Literal
 from pydantic import BaseModel
 from lib.exceptions import ComfyUIError
 
@@ -13,7 +13,24 @@ class ExecutionCallbacks(BaseModel):
     on_done: Optional[Callable[[Dict], None]] = None
     on_progress: Optional[Callable[[str, Dict, Optional[str]], None]] = None
     on_start: Optional[Callable[[Dict], None]] = None
-    on_ws_message: Optional[Callable[[str, Dict], None]] = None
+    on_ws_message: Optional[
+        Callable[
+            [
+                Literal[
+                    "binary",
+                    "executing",
+                    "execution_cached",
+                    "execution_complete",
+                    "execution_start",
+                    "progress",
+                    "status",
+                    "completed",
+                ],
+                Dict | bytes,
+            ],
+            None,
+        ]
+    ] = None
 
 
 class ExecutionResult(BaseModel):

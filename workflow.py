@@ -34,16 +34,6 @@ github_secret = Secret.from_name("github-secret")
 models_to_download = [
     # format is (huggingface repo_id, the model filename, comfyui models subdirectory we want to save the model in)
     (
-        "Comfy-Org/flux1-dev",
-        "flux1-dev-fp8.safetensors",
-        "checkpoints",
-    ),
-    (
-        "comfyanonymous/flux_text_encoders",
-        "t5xxl_fp8_e4m3fn.safetensors",
-        "clip",
-    ),
-    (
         "stabilityai/stable-diffusion-xl-base-1.0",
         "sd_xl_base_1.0.safetensors",
         "checkpoints",
@@ -53,7 +43,6 @@ models_to_download = [
         "sd_xl_refiner_1.0.safetensors",
         "checkpoints",
     ),
-    ("comfyanonymous/flux_text_encoders", "clip_l.safetensors", "clip"),
 ]
 
 
@@ -99,15 +88,21 @@ class ComfyWorkflow:
         prompt = construct_workflow_prompt(payload)
 
         try:
+            # Initialize img_bytes in the outer scope
+            self.img_bytes = None
             # Define callbacks for execution monitoring
             callbacks = ExecutionCallbacks(
                 on_error=lambda error_data: (logger.error(error_data),),
                 on_done=lambda msg: (
                     logger.info("Job Completed. Sending Completion Event."),
                 ),
+                # The example comfy workflow sends a binary message with the image at the last node.
+                # We need to extract the image from the binary message and set it as img_bytes.
                 on_ws_message=lambda type, msg: (
-                    logger.info(f"Received message: {type} - {msg}"),
-                    print(f"Received message: {type} - {msg}"),
+                    logger.info(f"Received message: {type} - {msg}")
+                    if type != "binary"
+                    else None,
+                    setattr(self, "img_bytes", msg[8:]) if type == "binary" else None,
                 ),
                 on_start=lambda msg: (
                     logger.info(
@@ -121,9 +116,16 @@ class ComfyWorkflow:
                 data=ExecutionData(prompt=prompt, process_id="123"), callbacks=callbacks
             )
 
-            print("execution result", execution_result)
+            json_response = execution_result.model_dump()
 
-            return execution_result
+            if self.img_bytes:
+                import base64
+
+                # Convert img_bytes to base64
+                img_base64 = base64.b64encode(self.img_bytes).decode("utf-8")
+                json_response["output_image"] = img_base64
+
+            return json_response
         except Exception as e:
             logger.error(f"Error in execution: {str(e)}")
             raise e

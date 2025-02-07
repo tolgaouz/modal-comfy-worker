@@ -19,16 +19,6 @@ logger = logging.getLogger(__name__)
 class ComfyServer:
     """Manages ComfyUI server lifecycle."""
 
-    MSG_TYPES_TO_PROCESS = [
-        "executing",
-        "execution_cached",
-        "execution_complete",
-        "execution_start",
-        "progress",
-        "status",
-        "completed",
-    ]
-
     def __init__(self, config: ComfyConfig = None):
         """Initialize ComfyServer with configuration.
 
@@ -149,7 +139,7 @@ class ComfyServer:
         self,
         data: ExecutionData,
         callbacks: ExecutionCallbacks = ExecutionCallbacks(),
-    ):
+    ) -> ExecutionResult:
         """
             Asynchronously execute a ComfyUI prompt with websocket-based monitoring and callbacks.
 
@@ -194,6 +184,8 @@ class ComfyServer:
                         # Use asyncio.to_thread for the blocking websocket receive
                         out = await asyncio.to_thread(ws.recv)
                         if not isinstance(out, str):
+                            if callbacks.on_ws_message:
+                                callbacks.on_ws_message("binary", out)
                             continue
 
                         message = json.loads(out)
@@ -202,11 +194,7 @@ class ComfyServer:
                         msg_prompt_id = message_data.get("prompt_id", None)
 
                         # Skip irrelevant messages
-                        if (
-                            prompt_id != msg_prompt_id
-                            or message_type not in self.MSG_TYPES_TO_PROCESS
-                            or not comfy_job
-                        ):
+                        if prompt_id != msg_prompt_id or not comfy_job:
                             continue
 
                         if callbacks.on_ws_message:
