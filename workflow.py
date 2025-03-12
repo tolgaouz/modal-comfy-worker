@@ -28,7 +28,17 @@ volume = Volume.from_name(VOLUME_NAME, create_if_missing=True)
 local_snapshot_path = os.path.join(os.path.dirname(__file__), "snapshot.json")
 local_prompt_path = os.path.join(os.path.dirname(__file__), "prompt.json")
 
-github_secret = Secret.from_name("github-secret")
+github_secret = Secret.from_name(
+    "github-secret",
+)
+
+try:
+    github_secret.hydrate()
+except Exception:
+    logger.error(
+        "GITHUB_TOKEN not found, using dummy value. The deployment will not be able to clone private git repositories.",
+    )
+    github_secret = Secret.from_dict({"NO_GITHUB_TOKEN": ""})
 
 
 models_to_download = [
