@@ -13,12 +13,12 @@ So make sure you set allow_concurrent_inputs to 1 in your modal app.
 """
 
 import time
-from .models import ExecutionData, ExecutionCallbacks
-from ..lib.utils import check_disk_speed
+from comfy.models import ExecutionData, ExecutionCallbacks
+from lib.utils import check_disk_speed
 from typing import Dict, List, Optional, Callable
 import os
 import asyncio
-from ..lib.logger import logger
+from lib.logger import logger
 
 
 class DummyServer:

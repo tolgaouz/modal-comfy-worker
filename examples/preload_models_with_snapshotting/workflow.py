@@ -1,23 +1,60 @@
 from modal import Secret, enter, App, Volume, method, exception, functions, asgi_app
-from ...comfy.experimental_server import ExperimentalComfyServer
-from ...lib.image import get_comfy_image
-from ...comfy.models import ExecutionCallbacks, ExecutionData
-from ...lib.logger import logger
-from ...lib.utils import get_time_ms
+from comfy.experimental_server import ExperimentalComfyServer
+from lib.image import get_comfy_image
+from comfy.models import ExecutionCallbacks, ExecutionData
+from lib.logger import logger
+from lib.utils import get_time_ms
 from .prompt_constructor import WorkflowInput, construct_workflow_prompt
 import os
 from fastapi import FastAPI, HTTPException
+from volume_updaters.individual_hf_models import HfModelsVolumeUpdater
+
+APP_NAME = "comfy-preload-example"
+VOLUME_NAME = f"{APP_NAME}-volume"
+
+app = App(APP_NAME)
+volume = Volume.from_name(VOLUME_NAME, create_if_missing=True)
 
 local_snapshot_path = os.path.join(os.path.dirname(__file__), "snapshot.json")
 local_prompt_path = os.path.join(os.path.dirname(__file__), "prompt.json")
 
 github_secret = Secret.from_name("github-secret")
 
+try:
+    github_secret.hydrate()
+except Exception:
+    logger.error(
+        "GITHUB_TOKEN not found, using dummy value. The deployment will not be able to clone private git repositories.",
+    )
+    github_secret = Secret.from_dict({"NO_GITHUB_TOKEN": ""})
+
+
+models_to_download = [
+    # format is (huggingface repo_id, the model filename, comfyui models subdirectory we want to save the model in)
+    (
+        "stabilityai/stable-diffusion-xl-base-1.0",
+        "sd_xl_base_1.0.safetensors",
+        "checkpoints",
+    ),
+    (
+        "stabilityai/stable-diffusion-xl-refiner-1.0",
+        "sd_xl_refiner_1.0.safetensors",
+        "checkpoints",
+    ),
+]
+
+
+async def volume_updater():
+    await HfModelsVolumeUpdater(models_to_download).update_volume()
+
+
 image = (
     get_comfy_image(
         local_snapshot_path=local_snapshot_path,
         local_prompt_path=local_prompt_path,
         github_secret=github_secret,
+        volume_updater=volume_updater,
+        volume=volume,
     )
     # Some custom nodes will require OpenGL support, so we need to install the dependencies
     .apt_install(
@@ -32,12 +69,6 @@ image = (
     )
     .pip_install("PyOpenGL", "PyOpenGL-accelerate")
 )
-
-APP_NAME = "comfy-preload-models-sdxl"
-VOLUME_NAME = f"{APP_NAME}-volume"
-
-app = App(APP_NAME)
-volume = Volume.from_name(VOLUME_NAME, create_if_missing=True)
 
 
 @app.cls(
