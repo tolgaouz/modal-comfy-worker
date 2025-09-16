@@ -1,6 +1,6 @@
 from modal import Image, Secret, Volume
 from typing import Optional, Callable
-from comfy.download_comfy import download_comfy
+from ..comfy.download_comfy import download_comfy
 
 base_image = (
     Image.debian_slim(python_version="3.12")

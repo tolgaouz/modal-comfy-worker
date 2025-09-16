@@ -5,7 +5,7 @@ The volume is then used as the /models directory in your ComfyUI container.
 """
 
 import asyncio
-from lib.base_volume_updater import VolumeUpdater
+from ..lib.base_volume_updater import VolumeUpdater
 
 
 class HfModelsVolumeUpdater(VolumeUpdater):

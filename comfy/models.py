@@ -1,6 +1,6 @@
 from typing import Optional, Callable, Dict, Literal
 from pydantic import BaseModel
-from lib.exceptions import ComfyUIError
+from ..lib.exceptions import ComfyUIError
 
 
 class ExecutionData(BaseModel):

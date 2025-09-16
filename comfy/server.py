@@ -4,9 +4,9 @@ import logging
 import requests
 import threading
 from .config import ComfyConfig
-from lib.utils import get_time_ms
-from lib.exceptions import ServerStartupError
-from lib.exceptions import ExecutionError
+from ..lib.utils import get_time_ms
+from ..lib.exceptions import ServerStartupError
+from ..lib.exceptions import ExecutionError
 from .models import ExecutionResult, QueuePromptData, ExecutionData, ExecutionCallbacks
 import json
 import asyncio

@@ -1,6 +1,6 @@
 import os
 from huggingface_hub import snapshot_download
-from lib.base_volume_updater import VolumeUpdater
+from ..lib.base_volume_updater import VolumeUpdater
 
 
 class HfRepoVolumeUpdater(VolumeUpdater):

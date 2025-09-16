@@ -1,13 +1,13 @@
 from modal import Secret, enter, App, Volume, method, exception, functions, asgi_app
-from comfy.experimental_server import ExperimentalComfyServer
-from lib.image import get_comfy_image
-from comfy.models import ExecutionCallbacks, ExecutionData
-from lib.logger import logger
-from lib.utils import get_time_ms
+from .comfy.experimental_server import ExperimentalComfyServer
+from ...lib.image import get_comfy_image
+from ...comfy.models import ExecutionCallbacks, ExecutionData
+from ...lib.logger import logger
+from ...lib.utils import get_time_ms
 from .prompt_constructor import WorkflowInput, construct_workflow_prompt
 import os
 from fastapi import FastAPI, HTTPException
-from volume_updaters.individual_hf_models import HfModelsVolumeUpdater
+from ...volume_updaters.individual_hf_models import HfModelsVolumeUpdater
 
 APP_NAME = "comfy-preload-example"
 VOLUME_NAME = f"{APP_NAME}-volume"
@@ -81,22 +81,41 @@ image = (
     # allow_concurrent_inputs=3,
     # concurrency_limit=10,
     # timeout=38,
-    container_idle_timeout=60,
+    scaledown_window=60,
     # keep_warm=1,
     retries=1,
     enable_memory_snapshot=True,
+    experimental_options={"enable_gpu_snapshot": True},
 )
 class ComfyWorkflow:
     @enter(snap=True)
     def run_this_on_container_startup(self):
         self.web_app = FastAPI()
+
+        # Models to preload to GPU during snapshot creation
+        models_to_preload = [
+            "checkpoints/sd_xl_refiner_1.0.safetensors",
+            "checkpoints/sd_xl_base_1.0.safetensors",
+        ]
+
         self.server = ExperimentalComfyServer(
-            preload_models=[
-                # You can optionally preload diffusion models to CPU memory.
-                # This is meant to reduce the inference time on containers with slow disk reads.
-                # "/root/ComfyUI/models/checkpoints/sd_xl_refiner_1.0.safetensors",
-                # "/root/ComfyUI/models/checkpoints/sd_xl_base_1.0.safetensors",
-            ]
+            preload_models=models_to_preload,
+            snapshot_mode=True,  # Enable GPU preloading during snapshot
+        )
+
+    @enter()
+    def setup_inference_mode(self):
+        """Setup server for inference mode (after snapshot restoration)"""
+        # Models that were preloaded during snapshot
+        models_to_preload = [
+            "checkpoints/sd_xl_refiner_1.0.safetensors",
+            "checkpoints/sd_xl_base_1.0.safetensors",
+        ]
+
+        # Override the server for inference mode
+        self.server = ExperimentalComfyServer(
+            preload_models=models_to_preload,
+            snapshot_mode=False,  # Use GPU-cached models during inference
         )
 
     @method()
